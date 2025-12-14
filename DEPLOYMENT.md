@@ -173,7 +173,7 @@ This guide provides step-by-step instructions for deploying the Real Estate Chat
 
 6. **Update Environment Variable**
    ```
-   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/realestate-chatbot
+   MONGODB_URI=your_mongodb_atlas_connection_string_here
    ```
 
 ### Local MongoDB
@@ -203,7 +203,7 @@ This guide provides step-by-step instructions for deploying the Real Estate Chat
 ### Backend (.env)
 ```env
 PORT=5000
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/realestate-chatbot
+MONGODB_URI=your_mongodb_atlas_connection_string_here
 OPENAI_API_KEY=sk-...  # Optional
 ```
 

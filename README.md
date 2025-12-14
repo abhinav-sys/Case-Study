@@ -167,7 +167,7 @@ See `QUICKSTART.md` for detailed setup instructions.
    Create a `.env` file in the `backend` directory:
    ```env
    PORT=5000
-   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/realestate-chatbot
+   MONGODB_URI=your_mongodb_connection_string_here
    ML_SERVICE_URL=http://localhost:8000
    OPENAI_API_KEY=your_openai_api_key_here  # Optional
    ```

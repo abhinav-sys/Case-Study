@@ -33,7 +33,7 @@ npm install
 3. Get connection string
 4. Create `.env` file in `backend/`:
    ```
-   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/realestate-chatbot
+   MONGODB_URI=your_mongodb_atlas_connection_string_here
    PORT=5000
    ML_SERVICE_URL=http://localhost:8000
    ```
