@@ -123,7 +123,7 @@ docker-compose down
 docker-compose logs -f
 ```
 
-See `DOCKER_SETUP.md` and `QUICK_START_DOCKER.md` for detailed Docker instructions.
+See `QUICKSTART.md` for detailed setup instructions.
 
 ---
 
