@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  # MongoDB Service
+  mongodb:
+    image: mongo:7
+    container_name: realestate-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: realestate-chatbot
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - realestate-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ML Service (Python FastAPI)
+  ml-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.ml
+    container_name: realestate-ml-service
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/complex_price_model_v2.pkl:/app/complex_price_model_v2.pkl:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - realestate-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # Backend Service (Node.js)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: realestate-backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/app/../data:ro
+      - /app/node_modules
+    env_file:
+      - .env
+    environment:
+      - PORT=5000
+      - MONGODB_URI=mongodb://mongodb:27017/realestate-chatbot
+      - ML_SERVICE_URL=http://ml-service:8000
+      - NODE_ENV=production
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      ml-service:
+        condition: service_healthy
+    networks:
+      - realestate-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Frontend Service (React)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: realestate-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - realestate-network
+    restart: unless-stopped
+
+volumes:
+  mongodb_data:
+
+networks:
+  realestate-network:
+    driver: bridge
+
