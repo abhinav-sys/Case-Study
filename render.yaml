@@ -1,0 +1,48 @@
+services:
+  # ML Service
+  - type: web
+    name: realestate-ml-service
+    env: docker
+    dockerfilePath: ./backend/Dockerfile.ml.cloud
+    dockerContext: ./
+    plan: free
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: PYTHONUNBUFFERED
+        value: "1"
+    healthCheckPath: /health
+
+  # Backend Service
+  - type: web
+    name: realestate-backend
+    env: docker
+    dockerfilePath: ./backend/Dockerfile.cloud
+    dockerContext: ./
+    plan: free
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false  # Set this in Render dashboard
+      - key: ML_SERVICE_URL
+        fromService:
+          type: web
+          name: realestate-ml-service
+          property: host
+    healthCheckPath: /api/health
+
+  # Frontend
+  - type: web
+    name: realestate-frontend
+    env: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./frontend/build
+    envVars:
+      - key: REACT_APP_API_URL
+        fromService:
+          type: web
+          name: realestate-backend
+          property: host

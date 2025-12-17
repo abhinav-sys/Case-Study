@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import apiClient from '../utils/axiosConfig';
 import { motion, AnimatePresence } from 'framer-motion';
 import PropertyCard from './PropertyCard';
 import { PropertyListSkeleton } from './LoadingSkeleton';
@@ -23,7 +23,7 @@ const PropertyList = ({ properties: initialProperties, onPropertySave, onAddToCo
   const loadAllProperties = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get('/api/properties?predict=true');
+      const response = await apiClient.get('/api/properties?predict=true');
       if (response.data.success) {
         setProperties(response.data.data);
         setFilteredProperties(response.data.data);

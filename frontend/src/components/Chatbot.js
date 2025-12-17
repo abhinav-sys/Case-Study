@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import axios from 'axios';
+import apiClient from '../utils/axiosConfig';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { 
   Send, 
@@ -562,7 +562,7 @@ const Chatbot = ({ onPropertiesFound, onPropertySave, onAddToComparison, sidebar
         content: msg.text
       }));
 
-      const response = await axios.post('/api/properties/search', {
+      const response = await apiClient.post('/api/properties/search', {
         message: userMessage,
         predict: true,
         conversationHistory: recentMessages,

@@ -8,6 +8,7 @@ import PropertyInsightsDashboard from './components/PropertyInsightsDashboard';
 import SavedProperties from './components/SavedProperties';
 import ErrorBoundary from './components/ErrorBoundary';
 import { Home, MessageSquare, Heart, GitCompare, Scale, BarChart3, Menu, X } from 'lucide-react';
+import { getApiUrl } from './config/api';
 
 function App() {
   const [activeTab, setActiveTab] = useState('chatbot');
@@ -27,7 +28,7 @@ function App() {
 
   const loadSavedProperties = async () => {
     try {
-      const response = await fetch('/api/saved-properties?userId=default-user');
+      const response = await fetch(getApiUrl('api/saved-properties?userId=default-user'));
       const data = await response.json();
       if (data.success) {
         setSavedProperties(data.data);
@@ -39,7 +40,7 @@ function App() {
 
   const handlePropertySave = async (property) => {
     try {
-      const response = await fetch('/api/saved-properties', {
+      const response = await fetch(getApiUrl('api/saved-properties'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -62,7 +63,7 @@ function App() {
 
   const handlePropertyUnsave = async (savedPropertyId) => {
     try {
-      const response = await fetch(`/api/saved-properties/${savedPropertyId}?userId=default-user`, {
+      const response = await fetch(getApiUrl(`api/saved-properties/${savedPropertyId}?userId=default-user`), {
         method: 'DELETE',
       });
 

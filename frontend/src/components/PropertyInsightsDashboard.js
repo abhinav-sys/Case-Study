@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import axios from 'axios';
+import apiClient from '../utils/axiosConfig';
 import {
   BarChart,
   Bar,
@@ -28,7 +28,7 @@ const PropertyInsightsDashboard = () => {
   const loadProperties = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get('/api/properties?predict=true');
+      const response = await apiClient.get('/api/properties?predict=true');
       if (response.data.success) {
         setProperties(response.data.data);
       }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
+import apiClient from '../utils/axiosConfig';
 import { Home, MapPin, Bed, Bath, Square, TrendingUp, TrendingDown, Loader, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 const PropertyComparisonTool = () => {
@@ -20,7 +20,7 @@ const PropertyComparisonTool = () => {
 
   const loadAllProperties = async () => {
     try {
-      const response = await axios.get('/api/properties?predict=true');
+      const response = await apiClient.get('/api/properties?predict=true');
       if (response.data.success) {
         setAllProperties(response.data.data);
       }
@@ -111,8 +111,8 @@ const PropertyComparisonTool = () => {
       
       // Get predictions for both properties
       const [pred1, pred2] = await Promise.all([
-        axios.post('/api/properties/predict', { property: prop1 }).catch(() => ({ data: { predicted_price: null } })),
-        axios.post('/api/properties/predict', { property: prop2 }).catch(() => ({ data: { predicted_price: null } }))
+        apiClient.post('/api/properties/predict', { property: prop1 }).catch(() => ({ data: { predicted_price: null } })),
+        apiClient.post('/api/properties/predict', { property: prop2 }).catch(() => ({ data: { predicted_price: null } }))
       ]);
       
       setProperty1({
