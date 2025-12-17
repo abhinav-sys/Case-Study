@@ -1,0 +1,28 @@
+# ML Service Dockerfile for Cloud Deployment (builds from root)
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Copy requirements
+COPY backend/requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application files
+COPY backend/ml_service.py .
+COPY backend/complex_price_model_v2.pkl .
+
+# Verify model file exists
+RUN ls -la complex_price_model_v2.pkl || echo "Warning: Model file not found"
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
+
+# Start ML service (Railway uses $PORT env var)
+# Use shell form to allow $PORT variable expansion
+CMD ["sh", "-c", "uvicorn ml_service:app --host 0.0.0.0 --port ${PORT:-8000}"]
