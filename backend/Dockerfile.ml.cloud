@@ -23,5 +23,6 @@ EXPOSE 8000
 HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
 
-# Start ML service
-CMD ["uvicorn", "ml_service:app", "--host", "0.0.0.0", "--port", "8000"]
+# Start ML service (Railway uses $PORT env var)
+# Use shell form to allow $PORT variable expansion
+CMD ["sh", "-c", "uvicorn ml_service:app --host 0.0.0.0 --port ${PORT:-8000}"]

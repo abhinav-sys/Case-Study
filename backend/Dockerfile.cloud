@@ -17,8 +17,8 @@ COPY backend/routes/ ./routes/
 # Copy data directory (from root context)
 COPY data /app/../data
 
-# Expose port
-EXPOSE 5000
+# Expose port (Railway will set PORT env var)
+EXPOSE ${PORT:-5000}
 
 # Health check
 HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
