@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Heart, MapPin, Bed, Bath, Square, DollarSign, GitCompare, Home, TrendingUp, TrendingDown, Share2, Download } from 'lucide-react';
 import jsPDF from 'jspdf';
@@ -8,13 +8,25 @@ const PropertyCard = ({ property, onSave, onAddToComparison, isSaved: initialIsS
   const [imageError, setImageError] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
 
-  const handleSave = () => {
+  // Sync isSaved state with prop changes
+  useEffect(() => {
+    setIsSaved(initialIsSaved);
+  }, [initialIsSaved]);
+
+  const handleSave = async () => {
     if (isSaved && onUnsave) {
+      // onUnsave will be called with the saved property's _id from parent
+      // For now, we'll pass property.id and let parent handle finding the _id
       onUnsave(property.id);
       setIsSaved(false);
     } else if (onSave) {
-      onSave(property);
-      setIsSaved(true);
+      try {
+        await onSave(property);
+        setIsSaved(true);
+      } catch (error) {
+        // Error handling is done in parent component
+        setIsSaved(false);
+      }
     }
   };
 

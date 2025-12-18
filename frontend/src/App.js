@@ -7,7 +7,7 @@ import PropertyComparisonTool from './components/PropertyComparisonTool';
 import PropertyInsightsDashboard from './components/PropertyInsightsDashboard';
 import SavedProperties from './components/SavedProperties';
 import ErrorBoundary from './components/ErrorBoundary';
-import { Home, MessageSquare, Heart, GitCompare, Scale, BarChart3, Menu, X } from 'lucide-react';
+import { Home, MessageSquare, Heart, GitCompare, Scale, BarChart3, Menu } from 'lucide-react';
 import { getApiUrl } from './config/api';
 
 function App() {
@@ -58,24 +58,41 @@ function App() {
       const data = await response.json();
       if (data.success) {
         setSavedProperties([...savedProperties, data.data]);
+        // Show success feedback
+        alert('Property saved successfully! 💾');
+      } else {
+        // Show error message from backend
+        alert(data.error || 'Failed to save property. Please try again.');
       }
     } catch (error) {
       console.error('Error saving property:', error);
+      alert('Unable to save property. Please check your connection and try again.');
     }
   };
 
-  const handlePropertyUnsave = async (savedPropertyId) => {
+  const handlePropertyUnsave = async (propertyId) => {
     try {
-      const response = await fetch(getApiUrl(`api/saved-properties/${savedPropertyId}?userId=default-user`), {
+      // Find the saved property by propertyId
+      const savedProperty = savedProperties.find(sp => sp.propertyId === propertyId || sp.property?.id === propertyId);
+      if (!savedProperty) {
+        alert('Property not found in saved list.');
+        return;
+      }
+
+      const response = await fetch(getApiUrl(`api/saved-properties/${savedProperty._id}?userId=default-user`), {
         method: 'DELETE',
       });
 
       const data = await response.json();
       if (data.success) {
-        setSavedProperties(savedProperties.filter(sp => sp._id !== savedPropertyId));
+        setSavedProperties(savedProperties.filter(sp => sp._id !== savedProperty._id));
+        alert('Property removed from saved list.');
+      } else {
+        alert(data.error || 'Failed to remove property. Please try again.');
       }
     } catch (error) {
       console.error('Error unsaving property:', error);
+      alert('Unable to remove property. Please try again.');
     }
   };
 
@@ -110,21 +127,11 @@ function App() {
         >
               {/* Sidebar Header */}
               <div className="p-4 border-b border-white/10 bg-gradient-to-r from-purple-600/20 to-indigo-600/20">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-center mb-4">
                   <h1 className="text-xl font-bold text-white flex items-center gap-2">
                     <span>🏠</span>
                     <span>Real Estate</span>
                   </h1>
-                  <motion.button
-                    onClick={() => setSidebarOpen(!sidebarOpen)}
-                    className="p-1.5 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    aria-label="Toggle sidebar"
-                    title="Toggle sidebar (tabs will remain accessible)"
-                  >
-                    <X size={18} />
-                  </motion.button>
                 </div>
               </div>
 
