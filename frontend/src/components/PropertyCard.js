@@ -13,11 +13,16 @@ const PropertyCard = ({ property, onSave, onAddToComparison, isSaved: initialIsS
     setIsSaved(initialIsSaved);
   }, [initialIsSaved]);
 
-  const handleSave = async () => {
+  const handleSave = async (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     if (isSaved && onUnsave) {
       // onUnsave will be called with the saved property's _id from parent
       // For now, we'll pass property.id and let parent handle finding the _id
-      onUnsave(property.id);
+      await onUnsave(property.id);
       setIsSaved(false);
     } else if (onSave) {
       try {
@@ -25,6 +30,7 @@ const PropertyCard = ({ property, onSave, onAddToComparison, isSaved: initialIsS
         setIsSaved(true);
       } catch (error) {
         // Error handling is done in parent component
+        console.error('Error in handleSave:', error);
         setIsSaved(false);
       }
     }
@@ -163,12 +169,15 @@ const PropertyCard = ({ property, onSave, onAddToComparison, isSaved: initialIsS
         )}
         
         {/* Action Buttons */}
-        <div className="absolute top-3 right-3 flex gap-2">
+        <div className="absolute top-3 right-3 flex gap-2 z-50">
           {/* Share Button */}
-          <div className="relative">
+          <div className="relative z-50">
             <motion.button
-              onClick={() => setShowShareMenu(!showShareMenu)}
-              className="w-10 h-10 rounded-full backdrop-blur-xl bg-white/20 text-white hover:bg-white/30 border border-white/30 flex items-center justify-center transition-all duration-300 shadow-lg"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowShareMenu(!showShareMenu);
+              }}
+              className="w-10 h-10 rounded-full backdrop-blur-xl bg-white/20 text-white hover:bg-white/30 border border-white/30 flex items-center justify-center transition-all duration-300 shadow-lg cursor-pointer"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               title="Share or export"
@@ -181,18 +190,24 @@ const PropertyCard = ({ property, onSave, onAddToComparison, isSaved: initialIsS
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="absolute right-0 top-12 mt-2 w-48 backdrop-blur-xl bg-white/20 rounded-xl border border-white/30 shadow-xl overflow-hidden z-50"
+                className="absolute right-0 top-12 mt-2 w-48 backdrop-blur-xl bg-white/20 rounded-xl border border-white/30 shadow-xl overflow-hidden z-[60]"
               >
                 <button
-                  onClick={handleShare}
-                  className="w-full px-4 py-3 text-left text-white hover:bg-white/20 flex items-center gap-3 transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleShare();
+                  }}
+                  className="w-full px-4 py-3 text-left text-white hover:bg-white/20 flex items-center gap-3 transition-colors cursor-pointer"
                 >
                   <Share2 size={18} />
                   <span className="text-sm font-medium">Share Property</span>
                 </button>
                 <button
-                  onClick={handleExportPDF}
-                  className="w-full px-4 py-3 text-left text-white hover:bg-white/20 flex items-center gap-3 transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleExportPDF();
+                  }}
+                  className="w-full px-4 py-3 text-left text-white hover:bg-white/20 flex items-center gap-3 transition-colors cursor-pointer"
                 >
                   <Download size={18} />
                   <span className="text-sm font-medium">Export as PDF</span>
@@ -203,10 +218,14 @@ const PropertyCard = ({ property, onSave, onAddToComparison, isSaved: initialIsS
 
           {/* Save Button */}
           <motion.button
-            onClick={handleSave}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              handleSave();
+            }}
             className={`
               w-10 h-10 rounded-full backdrop-blur-xl flex items-center justify-center
-              transition-all duration-300 shadow-lg
+              transition-all duration-300 shadow-lg cursor-pointer
               ${isSaved 
                 ? 'bg-gradient-to-r from-pink-500 to-red-500 text-white' 
                 : 'bg-white/20 text-white hover:bg-white/30 border border-white/30'
@@ -215,6 +234,7 @@ const PropertyCard = ({ property, onSave, onAddToComparison, isSaved: initialIsS
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             title={isSaved ? 'Remove from saved' : 'Save property'}
+            type="button"
           >
             <Heart size={18} fill={isSaved ? 'currentColor' : 'none'} />
           </motion.button>
@@ -227,7 +247,7 @@ const PropertyCard = ({ property, onSave, onAddToComparison, isSaved: initialIsS
       {/* Click outside to close share menu */}
       {showShareMenu && (
         <div
-          className="fixed inset-0 z-40"
+          className="fixed inset-0 z-[45]"
           onClick={() => setShowShareMenu(false)}
         />
       )}
