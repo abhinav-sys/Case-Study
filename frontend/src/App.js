@@ -147,12 +147,25 @@ function App() {
   return (
     <ErrorBoundary>
       <div className="fixed inset-0 flex bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden">
-        {/* Left Sidebar with Tabs - Always Visible */}
+        {/* Mobile Overlay */}
+        {isMobile && sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-30 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+        
+        {/* Left Sidebar with Tabs - Responsive */}
         <motion.aside
-          initial={{ width: 300, opacity: 1 }}
-          animate={{ width: 300, opacity: 1 }}
+          initial={false}
+          animate={{ 
+            x: sidebarOpen ? 0 : (isMobile ? '-100%' : 0),
+            width: isMobile ? (sidebarOpen ? '280px' : '0px') : (sidebarOpen ? '300px' : '0px')
+          }}
           transition={{ duration: 0.3, type: 'spring' }}
-          className="flex-shrink-0 bg-slate-800/95 backdrop-blur-2xl border-r-2 border-purple-500/30 flex flex-col shadow-2xl z-40"
+          className={`flex-shrink-0 bg-slate-800/95 backdrop-blur-2xl border-r-2 border-purple-500/30 flex flex-col shadow-2xl z-40 ${
+            isMobile ? 'fixed inset-y-0 left-0' : ''
+          }`}
         >
               {/* Sidebar Header */}
               <div className="p-3 md:p-4 border-b border-white/10 bg-gradient-to-r from-purple-600/20 to-indigo-600/20">
@@ -178,30 +191,36 @@ function App() {
               </div>
 
               {/* Navigation Tabs */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              <div className="flex-1 overflow-y-auto p-2 md:p-4 space-y-1 md:space-y-2">
                 {tabs.map((tab, index) => {
                   const Icon = tab.icon;
                   const isActive = activeTab === tab.id;
                   return (
                     <motion.button
                       key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
+                      onClick={() => {
+                        setActiveTab(tab.id);
+                        // Close sidebar on mobile after selecting tab
+                        if (isMobile) {
+                          setSidebarOpen(false);
+                        }
+                      }}
                       className={`
-                        relative w-full px-4 py-4 rounded-xl flex items-center gap-3 text-left transition-all mb-1
+                        relative w-full px-3 md:px-4 py-3 md:py-4 rounded-xl flex items-center gap-2 md:gap-3 text-left transition-all mb-1
                         ${isActive 
                           ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30 border-2 border-purple-400/50' 
                           : 'bg-white/10 hover:bg-white/15 text-white/90 hover:text-white border-2 border-transparent hover:border-purple-400/30'
                         }
                       `}
-                      whileHover={{ x: 4, scale: 1.02 }}
+                      whileHover={{ x: isMobile ? 0 : 4, scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       aria-label={tab.label}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.05 }}
                     >
-                      <Icon size={24} className={isActive ? 'text-white' : 'text-white/80'} />
-                      <span className="flex-1 text-base font-bold">{tab.label}</span>
+                      <Icon size={20} className={`${isActive ? 'text-white' : 'text-white/80'} md:w-6 md:h-6`} />
+                      <span className="flex-1 text-sm md:text-base font-bold">{tab.label}</span>
                       {tab.count !== undefined && (
                         <motion.span
                           initial={{ scale: 0 }}
