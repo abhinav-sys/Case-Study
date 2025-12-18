@@ -1,6 +1,6 @@
 // API Configuration
 // Uses REACT_APP_API_URL environment variable if set, otherwise falls back to relative paths
-const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+const API_BASE_URL = 'https://realestate-backend-production-9542.up.railway.app/api';
 
 // Helper function to create full API URL
 export const getApiUrl = (endpoint) => {
