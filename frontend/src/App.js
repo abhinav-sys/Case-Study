@@ -58,8 +58,7 @@ function App() {
       const data = await response.json();
       if (data.success) {
         setSavedProperties([...savedProperties, data.data]);
-        // Show success feedback
-        alert('Property saved successfully! 💾');
+        // Success - property saved (heart icon will update automatically)
       } else {
         // Show error message from backend
         alert(data.error || 'Failed to save property. Please try again.');
