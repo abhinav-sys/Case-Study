@@ -163,12 +163,12 @@ function App() {
         )}
         
         {/* Left Sidebar with Tabs - Responsive */}
+        {(!isMobile || sidebarOpen) && (
         <motion.aside
           initial={false}
           animate={{ 
             x: isMobile ? (sidebarOpen ? 0 : '-100%') : 0,
-            width: isMobile ? (sidebarOpen ? '280px' : '0px') : (sidebarOpen ? '300px' : '0px'),
-            opacity: isMobile && !sidebarOpen ? 0 : 1
+            width: isMobile ? (sidebarOpen ? '280px' : '0px') : (sidebarOpen ? '300px' : '0px')
           }}
           transition={{ duration: 0.3, type: 'spring' }}
           className={`flex-shrink-0 bg-slate-800/95 backdrop-blur-2xl border-r-2 border-purple-500/30 flex flex-col shadow-2xl z-40 ${
@@ -176,7 +176,8 @@ function App() {
           }`}
           style={{
             pointerEvents: isMobile && !sidebarOpen ? 'none' : 'auto',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            display: isMobile && !sidebarOpen ? 'none' : 'flex'
           }}
         >
               {/* Sidebar Header */}
@@ -262,6 +263,7 @@ function App() {
                 </p>
               </div>
         </motion.aside>
+        )}
 
         {/* Sidebar Toggle Button (show when sidebar is closed) */}
         {!sidebarOpen && (
