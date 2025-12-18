@@ -167,14 +167,16 @@ function App() {
           initial={false}
           animate={{ 
             x: isMobile ? (sidebarOpen ? 0 : '-100%') : 0,
-            width: isMobile ? '280px' : (sidebarOpen ? '300px' : '0px')
+            width: isMobile ? (sidebarOpen ? '280px' : '0px') : (sidebarOpen ? '300px' : '0px'),
+            opacity: isMobile && !sidebarOpen ? 0 : 1
           }}
           transition={{ duration: 0.3, type: 'spring' }}
           className={`flex-shrink-0 bg-slate-800/95 backdrop-blur-2xl border-r-2 border-purple-500/30 flex flex-col shadow-2xl z-40 ${
             isMobile ? 'fixed inset-y-0 left-0' : ''
           }`}
           style={{
-            overflow: isMobile && !sidebarOpen ? 'hidden' : 'visible'
+            pointerEvents: isMobile && !sidebarOpen ? 'none' : 'auto',
+            overflow: 'hidden'
           }}
         >
               {/* Sidebar Header */}
@@ -278,7 +280,7 @@ function App() {
         )}
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div className={`flex-1 flex flex-col min-w-0 overflow-hidden ${isMobile && sidebarOpen ? 'ml-0' : ''}`}>
           {/* Top Bar (only for non-chatbot tabs) */}
           {activeTab !== 'chatbot' && (
             <motion.div
