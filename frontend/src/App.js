@@ -22,9 +22,12 @@ function App() {
     setSidebarOpen(true);
   }, []);
 
+  // Load saved properties only when needed (when viewing properties or saved tabs)
   useEffect(() => {
-    loadSavedProperties();
-  }, []);
+    if (activeTab === 'properties' || activeTab === 'saved') {
+      loadSavedProperties();
+    }
+  }, [activeTab]);
 
   const loadSavedProperties = async () => {
     try {
