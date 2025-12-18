@@ -169,7 +169,7 @@ const PropertyCard = ({ property, onSave, onAddToComparison, isSaved: initialIsS
         )}
         
         {/* Action Buttons */}
-        <div className="absolute top-3 right-3 flex gap-2 z-50">
+        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 flex gap-1.5 sm:gap-2 z-50">
           {/* Share Button */}
           <div className="relative z-50">
             <motion.button
@@ -177,7 +177,7 @@ const PropertyCard = ({ property, onSave, onAddToComparison, isSaved: initialIsS
                 e.stopPropagation();
                 setShowShareMenu(!showShareMenu);
               }}
-              className="w-10 h-10 rounded-full backdrop-blur-xl bg-white/20 text-white hover:bg-white/30 border border-white/30 flex items-center justify-center transition-all duration-300 shadow-lg cursor-pointer"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full backdrop-blur-xl bg-white/20 text-white hover:bg-white/30 border border-white/30 flex items-center justify-center transition-all duration-300 shadow-lg cursor-pointer"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               title="Share or export"
@@ -224,7 +224,7 @@ const PropertyCard = ({ property, onSave, onAddToComparison, isSaved: initialIsS
               handleSave();
             }}
             className={`
-              w-10 h-10 rounded-full backdrop-blur-xl flex items-center justify-center
+              w-9 h-9 sm:w-10 sm:h-10 rounded-full backdrop-blur-xl flex items-center justify-center
               transition-all duration-300 shadow-lg cursor-pointer
               ${isSaved 
                 ? 'bg-gradient-to-r from-pink-500 to-red-500 text-white' 
@@ -236,7 +236,7 @@ const PropertyCard = ({ property, onSave, onAddToComparison, isSaved: initialIsS
             title={isSaved ? 'Remove from saved' : 'Save property'}
             type="button"
           >
-            <Heart size={18} fill={isSaved ? 'currentColor' : 'none'} />
+            <Heart size={16} className="sm:w-[18px] sm:h-[18px]" fill={isSaved ? 'currentColor' : 'none'} />
           </motion.button>
         </div>
 
@@ -253,17 +253,17 @@ const PropertyCard = ({ property, onSave, onAddToComparison, isSaved: initialIsS
       )}
 
       {/* Content */}
-      <div className="p-4 md:p-5 space-y-3">
+      <div className="p-3 sm:p-4 md:p-5 space-y-2 sm:space-y-3">
         {/* Title */}
-        <h3 className="text-lg md:text-xl font-bold text-white line-clamp-2 group-hover:text-purple-200 transition-colors">
+        <h3 className="text-base sm:text-lg md:text-xl font-bold text-white line-clamp-2 group-hover:text-purple-200 transition-colors">
           {property.title}
         </h3>
 
         {/* Price Section */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <DollarSign size={20} className="text-green-400" />
-            <span className="text-2xl md:text-3xl font-bold text-white">
+        <div className="space-y-1.5 sm:space-y-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <DollarSign size={18} className="text-green-400 sm:w-5 sm:h-5" />
+            <span className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
               {formatPrice(property.price)}
             </span>
           </div>

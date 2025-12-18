@@ -143,19 +143,19 @@ const PropertyList = ({ properties: initialProperties, onPropertySave, onAddToCo
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 backdrop-blur-xl bg-white/10 rounded-2xl p-4 md:p-6 border border-white/20 shadow-xl shadow-black/30">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 backdrop-blur-xl bg-white/10 rounded-2xl p-3 sm:p-4 md:p-6 border border-white/20 shadow-xl shadow-black/30">
         <motion.h2
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="text-2xl md:text-3xl font-bold text-white"
+          className="text-xl sm:text-2xl md:text-3xl font-bold text-white"
         >
           All Properties ({filteredProperties.length})
         </motion.h2>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <motion.button
             onClick={() => setShowFilters(!showFilters)}
             className={`
-              flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm
+              flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm
               transition-all duration-300 backdrop-blur-sm
               ${showFilters
                 ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-purple-500/30'
@@ -165,18 +165,18 @@ const PropertyList = ({ properties: initialProperties, onPropertySave, onAddToCo
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
           >
-            <SlidersHorizontal size={18} />
+            <SlidersHorizontal size={16} className="sm:w-[18px] sm:h-[18px]" />
             <span>Filters</span>
           </motion.button>
           {hasActiveFilters && (
             <motion.button
               onClick={clearFilters}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-500/20 text-white border border-red-400/30 hover:bg-red-500/30 backdrop-blur-sm transition-all duration-300 font-semibold text-sm"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-red-500/20 text-white border border-red-400/30 hover:bg-red-500/30 backdrop-blur-sm transition-all duration-300 font-semibold text-xs sm:text-sm"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <X size={18} />
-              <span>Clear</span>
+              <X size={16} className="sm:w-[18px] sm:h-[18px]" />
+              <span className="hidden sm:inline">Clear</span>
             </motion.button>
           )}
         </div>
@@ -290,7 +290,7 @@ const PropertyList = ({ properties: initialProperties, onPropertySave, onAddToCo
           </motion.button>
         </motion.div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
           {filteredProperties.map((property, index) => (
             <motion.div
               key={property.id}

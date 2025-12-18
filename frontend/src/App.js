@@ -16,11 +16,31 @@ function App() {
   const [savedProperties, setSavedProperties] = useState([]);
   const [comparisonProperties, setComparisonProperties] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   
-  // Ensure sidebar is always visible on mount and prevent closing
+  // Check if mobile on mount and resize
   useEffect(() => {
-    setSidebarOpen(true);
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+      // Auto-close sidebar on mobile when switching tabs
+      if (window.innerWidth < 768) {
+        setSidebarOpen(false);
+      } else {
+        setSidebarOpen(true);
+      }
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
+  
+  // Ensure sidebar is always visible on desktop
+  useEffect(() => {
+    if (!isMobile) {
+      setSidebarOpen(true);
+    }
+  }, [isMobile]);
 
   // Load saved properties only when needed (when viewing properties or saved tabs)
   useEffect(() => {
@@ -135,12 +155,25 @@ function App() {
           className="flex-shrink-0 bg-slate-800/95 backdrop-blur-2xl border-r-2 border-purple-500/30 flex flex-col shadow-2xl z-40"
         >
               {/* Sidebar Header */}
-              <div className="p-4 border-b border-white/10 bg-gradient-to-r from-purple-600/20 to-indigo-600/20">
-                <div className="flex items-center justify-center mb-4">
-                  <h1 className="text-xl font-bold text-white flex items-center gap-2">
+              <div className="p-3 md:p-4 border-b border-white/10 bg-gradient-to-r from-purple-600/20 to-indigo-600/20">
+                <div className="flex items-center justify-between mb-4">
+                  <h1 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
                     <span>🏠</span>
-                    <span>Real Estate</span>
+                    <span className="hidden sm:inline">Real Estate</span>
+                    <span className="sm:hidden">Real Estate</span>
                   </h1>
+                  {/* Close button for mobile */}
+                  {isMobile && (
+                    <motion.button
+                      onClick={() => setSidebarOpen(false)}
+                      className="p-2 rounded-lg hover:bg-white/10 text-white/80 hover:text-white transition-colors md:hidden"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      aria-label="Close sidebar"
+                    >
+                      <Menu size={20} />
+                    </motion.button>
+                  )}
                 </div>
               </div>
 
@@ -173,7 +206,7 @@ function App() {
                         <motion.span
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
-                          className={`text-xs font-bold px-3 py-1 rounded-full ${
+                          className={`text-xs font-bold px-2 md:px-3 py-1 rounded-full ${
                             isActive ? 'bg-white/40 text-white' : 'bg-purple-500/40 text-purple-200'
                           }`}
                         >
@@ -200,19 +233,19 @@ function App() {
               </div>
         </motion.aside>
 
-        {/* Sidebar Toggle Button (when collapsed) */}
-        {!sidebarOpen && (
+        {/* Sidebar Toggle Button (when collapsed or on mobile) */}
+        {(!sidebarOpen || isMobile) && (
           <motion.button
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             onClick={() => setSidebarOpen(true)}
-            className="fixed left-4 top-4 z-50 p-4 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 backdrop-blur-xl border-2 border-white/30 text-white hover:from-purple-500 hover:to-indigo-500 transition-all shadow-2xl shadow-purple-500/50"
+            className="fixed left-2 md:left-4 top-2 md:top-4 z-50 p-3 md:p-4 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 backdrop-blur-xl border-2 border-white/30 text-white hover:from-purple-500 hover:to-indigo-500 transition-all shadow-2xl shadow-purple-500/50"
             whileHover={{ scale: 1.15, x: 4, rotate: 5 }}
             whileTap={{ scale: 0.9 }}
             aria-label="Open sidebar to see all tabs"
             title="Click to show navigation tabs"
           >
-            <Menu size={28} />
+            <Menu size={24} className="md:w-7 md:h-7" />
           </motion.button>
         )}
 
@@ -223,11 +256,11 @@ function App() {
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="backdrop-blur-xl bg-white/10 border-b border-white/20 shadow-lg p-4"
+              className="backdrop-blur-xl bg-white/10 border-b border-white/20 shadow-lg p-3 md:p-4"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {!sidebarOpen && (
+                <div className="flex items-center gap-2 md:gap-3">
+                  {(isMobile || !sidebarOpen) && (
                     <motion.button
                       onClick={() => setSidebarOpen(true)}
                       className="p-2 rounded-lg hover:bg-white/10 text-white/80 hover:text-white transition-colors"
@@ -235,10 +268,10 @@ function App() {
                       whileTap={{ scale: 0.9 }}
                       aria-label="Open sidebar"
                     >
-                      <Menu size={20} />
+                      <Menu size={18} className="md:w-5 md:h-5" />
                     </motion.button>
                   )}
-                  <h2 className="text-xl font-bold text-white">
+                  <h2 className="text-lg md:text-xl font-bold text-white">
                     {tabs.find(t => t.id === activeTab)?.label}
                   </h2>
                 </div>
@@ -255,7 +288,7 @@ function App() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3 }}
-                className={`h-full w-full ${activeTab === 'chatbot' ? '' : 'p-4 md:p-6 lg:p-8'}`}
+                className={`h-full w-full ${activeTab === 'chatbot' ? '' : 'p-3 sm:p-4 md:p-6 lg:p-8'}`}
               >
                 {activeTab === 'chatbot' && (
                   <Chatbot
