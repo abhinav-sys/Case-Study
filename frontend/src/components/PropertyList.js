@@ -24,12 +24,19 @@ const PropertyList = ({ properties: initialProperties, onPropertySave, onAddToCo
     try {
       setIsLoading(true);
       const response = await apiClient.get('/api/properties?predict=true');
-      if (response.data.success) {
-        setProperties(response.data.data);
-        setFilteredProperties(response.data.data);
+      if (response.data.success && response.data.data) {
+        const loadedProperties = Array.isArray(response.data.data) ? response.data.data : [];
+        setProperties(loadedProperties);
+        // applyFilters will be called automatically via useEffect when properties change
+      } else {
+        console.warn('No properties data in response:', response.data);
+        setProperties([]);
+        setFilteredProperties([]);
       }
     } catch (error) {
       console.error('Error loading properties:', error);
+      setProperties([]);
+      setFilteredProperties([]);
     } finally {
       setIsLoading(false);
     }
