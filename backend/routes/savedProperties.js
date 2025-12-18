@@ -6,10 +6,19 @@ const router = express.Router();
 // Get all saved properties for a user
 router.get('/', async (req, res) => {
   try {
+    // Check if MongoDB is connected
+    if (req.app.locals.mongoose?.connection?.readyState !== 1) {
+      return res.json({ success: true, data: [], message: 'MongoDB not connected - saving features disabled' });
+    }
+    
     const userId = req.query.userId || 'default-user';
     const savedProperties = await SavedProperty.find({ userId }).sort({ savedAt: -1 });
     res.json({ success: true, data: savedProperties });
   } catch (error) {
+    // If MongoDB error, return empty array instead of error
+    if (error.name === 'MongoServerError' || error.message.includes('MongoDB')) {
+      return res.json({ success: true, data: [], message: 'MongoDB not available' });
+    }
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -17,6 +26,14 @@ router.get('/', async (req, res) => {
 // Save a property
 router.post('/', async (req, res) => {
   try {
+    // Check if MongoDB is connected
+    if (req.app.locals.mongoose?.connection?.readyState !== 1) {
+      return res.status(503).json({ 
+        success: false, 
+        error: 'MongoDB not connected - saving features are disabled. Please configure MONGODB_URI environment variable.' 
+      });
+    }
+    
     const { userId = 'default-user', propertyId, property } = req.body;
     
     if (!propertyId || !property) {
@@ -34,6 +51,12 @@ router.post('/', async (req, res) => {
   } catch (error) {
     if (error.code === 11000) {
       return res.status(400).json({ success: false, error: 'Property already saved' });
+    }
+    if (error.name === 'MongoServerError' || error.message.includes('MongoDB')) {
+      return res.status(503).json({ 
+        success: false, 
+        error: 'MongoDB not available - saving features are disabled' 
+      });
     }
     res.status(500).json({ success: false, error: error.message });
   }
@@ -103,12 +126,21 @@ router.delete('/:id', async (req, res) => {
 // Check if a property is saved
 router.get('/check/:propertyId', async (req, res) => {
   try {
+    // Check if MongoDB is connected
+    if (req.app.locals.mongoose?.connection?.readyState !== 1) {
+      return res.json({ success: true, isSaved: false, message: 'MongoDB not connected' });
+    }
+    
     const { propertyId } = req.params;
     const userId = req.query.userId || 'default-user';
     
     const saved = await SavedProperty.findOne({ userId, propertyId });
     res.json({ success: true, isSaved: !!saved, data: saved });
   } catch (error) {
+    // If MongoDB error, return not saved
+    if (error.name === 'MongoServerError' || error.message.includes('MongoDB')) {
+      return res.json({ success: true, isSaved: false, message: 'MongoDB not available' });
+    }
     res.status(500).json({ success: false, error: error.message });
   }
 });

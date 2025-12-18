@@ -45,6 +45,17 @@ mongoose.connect(MONGODB_URI, {
     console.log('⚠️  Continuing without MongoDB (saving features will not work)');
   });
 
+// Make mongoose available to routes for connection checking
+app.locals.mongoose = mongoose;
+?
+
+?
+// Make mongoose available to routes for connection checking
+?
+app.locals.mongoose = mongoose;
+?
+
+?
 // Load JSON data files
 const loadJSONFile = (filename) => {
   try {
@@ -286,6 +297,45 @@ const enhancePropertiesWithPredictions = async (properties) => {
 };
 
 // Routes
+?
+// Root route - API information
+?
+app.get('/', (req, res) => {
+?
+  res.json({
+?
+    status: 'ok',
+?
+    message: 'Real Estate Chatbot API',
+?
+    version: '1.0.0',
+?
+    endpoints: {
+?
+      health: '/api/health',
+?
+      properties: '/api/properties',
+?
+      search: '/api/properties/search',
+?
+      predict: '/api/properties/predict',
+?
+      analyze: '/api/properties/analyze',
+?
+      savedProperties: '/api/saved-properties'
+?
+    },
+?
+    mongodb_connected: mongoose.connection.readyState === 1,
+?
+    ml_service_url: ML_SERVICE_URL
+?
+  });
+?
+});
+?
+
+?
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
@@ -835,4 +885,8 @@ app.use('/api/saved-properties', savedPropertyRoutes);
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
+
+
+
+
 
