@@ -70,11 +70,21 @@ function App() {
     }
   };
 
-  const handlePropertyUnsave = async (propertyId) => {
+  const handlePropertyUnsave = async (savedPropertyIdOrPropertyId) => {
     try {
-      // Find the saved property by propertyId
-      const savedProperty = savedProperties.find(sp => sp.propertyId === propertyId || sp.property?.id === propertyId);
+      // Check if it's already a saved property _id (from SavedProperties component)
+      let savedProperty = savedProperties.find(sp => sp._id === savedPropertyIdOrPropertyId);
+      
+      // If not found, try to find by propertyId (from PropertyCard component)
       if (!savedProperty) {
+        savedProperty = savedProperties.find(sp => 
+          sp.propertyId === savedPropertyIdOrPropertyId || 
+          sp.property?.id === savedPropertyIdOrPropertyId
+        );
+      }
+
+      if (!savedProperty) {
+        console.error('Property not found:', savedPropertyIdOrPropertyId, 'Available:', savedProperties.map(sp => ({ _id: sp._id, propertyId: sp.propertyId })));
         alert('Property not found in saved list.');
         return;
       }
@@ -86,7 +96,7 @@ function App() {
       const data = await response.json();
       if (data.success) {
         setSavedProperties(savedProperties.filter(sp => sp._id !== savedProperty._id));
-        alert('Property removed from saved list.');
+        // Don't show alert for successful removal - it's cleaner UX
       } else {
         alert(data.error || 'Failed to remove property. Please try again.');
       }
