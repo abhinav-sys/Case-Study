@@ -15,32 +15,39 @@ function App() {
   const [properties, setProperties] = useState([]);
   const [savedProperties, setSavedProperties] = useState([]);
   const [comparisonProperties, setComparisonProperties] = useState([]);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
   
-  // Check if mobile on mount and resize
+  // Initialize mobile state immediately to prevent flash
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768;
+    }
+    return false;
+  });
+  
+  // Initialize sidebar state based on screen size
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 768; // Closed on mobile, open on desktop
+    }
+    return true;
+  });
+  
+  // Check if mobile on resize
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-      // Auto-close sidebar on mobile when switching tabs
-      if (window.innerWidth < 768) {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      // Auto-close sidebar on mobile, open on desktop
+      if (mobile) {
         setSidebarOpen(false);
       } else {
         setSidebarOpen(true);
       }
     };
     
-    checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-  
-  // Ensure sidebar is always visible on desktop
-  useEffect(() => {
-    if (!isMobile) {
-      setSidebarOpen(true);
-    }
-  }, [isMobile]);
 
   // Load saved properties only when needed (when viewing properties or saved tabs)
   useEffect(() => {
@@ -159,21 +166,23 @@ function App() {
         <motion.aside
           initial={false}
           animate={{ 
-            x: sidebarOpen ? 0 : (isMobile ? '-100%' : 0),
-            width: isMobile ? (sidebarOpen ? '280px' : '0px') : (sidebarOpen ? '300px' : '0px')
+            x: isMobile ? (sidebarOpen ? 0 : '-100%') : 0,
+            width: isMobile ? '280px' : (sidebarOpen ? '300px' : '0px')
           }}
           transition={{ duration: 0.3, type: 'spring' }}
           className={`flex-shrink-0 bg-slate-800/95 backdrop-blur-2xl border-r-2 border-purple-500/30 flex flex-col shadow-2xl z-40 ${
             isMobile ? 'fixed inset-y-0 left-0' : ''
           }`}
+          style={{
+            overflow: isMobile && !sidebarOpen ? 'hidden' : 'visible'
+          }}
         >
               {/* Sidebar Header */}
               <div className="p-3 md:p-4 border-b border-white/10 bg-gradient-to-r from-purple-600/20 to-indigo-600/20">
                 <div className="flex items-center justify-between mb-4">
                   <h1 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
                     <span>🏠</span>
-                    <span className="hidden sm:inline">Real Estate</span>
-                    <span className="sm:hidden">Real Estate</span>
+                    <span>Real Estate</span>
                   </h1>
                   {/* Close button for mobile */}
                   {isMobile && (
@@ -252,8 +261,8 @@ function App() {
               </div>
         </motion.aside>
 
-        {/* Sidebar Toggle Button (when collapsed or on mobile) */}
-        {(!sidebarOpen || isMobile) && (
+        {/* Sidebar Toggle Button (show when sidebar is closed) */}
+        {!sidebarOpen && (
           <motion.button
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
