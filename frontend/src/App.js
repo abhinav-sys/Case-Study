@@ -163,7 +163,6 @@ function App() {
         )}
         
         {/* Left Sidebar with Tabs - Responsive */}
-        {(!isMobile || sidebarOpen) && (
         <motion.aside
           initial={false}
           animate={{ 
@@ -171,13 +170,12 @@ function App() {
             width: isMobile ? (sidebarOpen ? '280px' : '0px') : (sidebarOpen ? '300px' : '0px')
           }}
           transition={{ duration: 0.3, type: 'spring' }}
-          className={`flex-shrink-0 bg-slate-800/95 backdrop-blur-2xl border-r-2 border-purple-500/30 flex flex-col shadow-2xl z-40 ${
-            isMobile ? 'fixed inset-y-0 left-0' : ''
+          className={`bg-slate-800/95 backdrop-blur-2xl border-r-2 border-purple-500/30 flex flex-col shadow-2xl z-40 ${
+            isMobile ? 'fixed inset-y-0 left-0' : 'flex-shrink-0'
           }`}
           style={{
             pointerEvents: isMobile && !sidebarOpen ? 'none' : 'auto',
-            overflow: 'hidden',
-            display: isMobile && !sidebarOpen ? 'none' : 'flex'
+            overflow: 'hidden'
           }}
         >
               {/* Sidebar Header */}
@@ -282,7 +280,7 @@ function App() {
         )}
 
         {/* Main Content Area */}
-        <div className={`flex-1 flex flex-col min-w-0 overflow-hidden ${isMobile && sidebarOpen ? 'ml-0' : ''}`}>
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Top Bar (only for non-chatbot tabs) */}
           {activeTab !== 'chatbot' && (
             <motion.div
