@@ -1,4 +1,92 @@
-# Backend Dockerfile for Cloud Deployment (builds from root)
+bubbly-analysis
+
+
+production
+
+Architecture
+Observability
+Logs
+Settings
+
+
+
+
+
+
+
+Activity
+
+
+realestate-ml-service
+Deployments
+Variables
+Metrics
+Settings
+Unexposed service
+europe-west4-drams3a
+1 Replica
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+History
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+realestate-ml-service
+/
+b02eb55f
+Failed
+
+Dec 17, 2025, 8:53 PM
+realestate-ml-service-production.up.railway.app
+Get Help
+DetailsBuildDeployHTTP
+Search build logs
+
+You reached the start of the range
+Dec 17, 2025, 8:48 PM
+ 
+[Region: europe-west4]
+Dockerfile `backend/Dockerfile` does not exist
+You reached the end of the range
+Dec 17, 2025, 8:58 PM
+
+
+realestate-ml-service | Railway# Backend Dockerfile for Cloud Deployment (builds from root)
 FROM node:18-alpine
 
 WORKDIR /app
