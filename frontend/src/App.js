@@ -153,7 +153,7 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <div className="fixed inset-0 flex bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden">
+      <div className={`fixed inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden ${isMobile ? '' : 'flex'}`}>
         {/* Mobile Overlay */}
         {isMobile && sidebarOpen && (
           <motion.div 
@@ -283,7 +283,7 @@ function App() {
         )}
 
         {/* Main Content Area */}
-        <div className={`flex-1 flex flex-col min-w-0 overflow-hidden ${isMobile ? 'w-full' : ''}`}>
+        <div className={`flex flex-col min-w-0 overflow-hidden ${isMobile ? 'w-full h-full' : 'flex-1'}`}>
           {/* Top Bar (only for non-chatbot tabs) */}
           {activeTab !== 'chatbot' && (
             <motion.div
