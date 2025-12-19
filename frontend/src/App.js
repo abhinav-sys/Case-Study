@@ -156,7 +156,10 @@ function App() {
       <div className="fixed inset-0 flex bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden">
         {/* Mobile Overlay */}
         {isMobile && sidebarOpen && (
-          <div 
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 z-30 md:hidden"
             onClick={() => setSidebarOpen(false)}
           />
@@ -167,7 +170,7 @@ function App() {
           initial={false}
           animate={{ 
             x: isMobile ? (sidebarOpen ? 0 : '-100%') : 0,
-            width: isMobile ? (sidebarOpen ? '280px' : '0px') : (sidebarOpen ? '300px' : '0px')
+            width: isMobile ? '280px' : (sidebarOpen ? '300px' : '0px')
           }}
           transition={{ duration: 0.3, type: 'spring' }}
           className={`bg-slate-800/95 backdrop-blur-2xl border-r-2 border-purple-500/30 flex flex-col shadow-2xl z-40 ${
@@ -261,7 +264,6 @@ function App() {
                 </p>
               </div>
         </motion.aside>
-        )}
 
         {/* Sidebar Toggle Button (show when sidebar is closed) */}
         {!sidebarOpen && (
