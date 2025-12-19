@@ -178,7 +178,8 @@ function App() {
           }`}
           style={{
             pointerEvents: isMobile && !sidebarOpen ? 'none' : 'auto',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            visibility: isMobile && !sidebarOpen ? 'hidden' : 'visible'
           }}
         >
               {/* Sidebar Header */}
@@ -282,7 +283,7 @@ function App() {
         )}
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div className={`flex-1 flex flex-col min-w-0 overflow-hidden ${isMobile ? 'w-full' : ''}`}>
           {/* Top Bar (only for non-chatbot tabs) */}
           {activeTab !== 'chatbot' && (
             <motion.div
