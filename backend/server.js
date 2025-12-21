@@ -568,9 +568,16 @@ const handleChatGPTConversation = async (userMessage, conversationHistory = [], 
 
   // Fallback to OpenAI if available
   if (!openai) {
-    // Use ML automated response as final fallback
+    // Use ML automated response as final fallback (even with lower confidence)
     if (mlAnalysis && mlAnalysis.automated_response) {
-      return mlAnalysis.automated_response;
+      // For greetings and goodbyes, always use ML response
+      if (mlAnalysis.intent === 'greeting' || mlAnalysis.intent === 'goodbye') {
+        return mlAnalysis.automated_response;
+      }
+      // For other intents, use if confidence is reasonable
+      if (mlAnalysis.confidence > 0.5) {
+        return mlAnalysis.automated_response;
+      }
     }
     return null;
   }
@@ -869,11 +876,24 @@ Response format: Start with acknowledging the search, then explain the JSON data
       console.log('⚠️  No properties found but ChatGPT not available or no message');
     }
     
-    // Add intelligent insights for found properties
+    // Add intelligent insights for found properties (use ML first, then OpenAI)
     let responseMessage = null;
-    if (filteredProperties.length > 0 && openai && message) {
-      try {
-        const insightsPrompt = `The user searched: "${message}"
+    if (filteredProperties.length > 0 && message) {
+      // Try ML first for automated response
+      const mlAnalysis = await analyzeMessageWithML(message, conversationHistory || []);
+      if (mlAnalysis && mlAnalysis.intent === 'search_property' && mlAnalysis.automated_response) {
+        responseMessage = mlAnalysis.automated_response;
+        // Enhance with property count
+        responseMessage = responseMessage.replace(
+          /Let me search for you/i,
+          `I found ${filteredProperties.length} propert${filteredProperties.length === 1 ? 'y' : 'ies'} matching your criteria!`
+        );
+      }
+      
+      // If ML didn't provide a good response, try OpenAI
+      if (!responseMessage && openai) {
+        try {
+          const insightsPrompt = `The user searched: "${message}"
 Found ${filteredProperties.length} properties matching their criteria.
 
 Provide a brief, friendly response (1-2 sentences) that:
@@ -883,19 +903,25 @@ Provide a brief, friendly response (1-2 sentences) that:
 
 Be concise and enthusiastic.`;
 
-        const insightsCompletion = await openai.chat.completions.create({
-          model: "gpt-3.5-turbo",
-          messages: [
-            { role: "system", content: "You are a helpful real estate assistant. Provide brief, friendly confirmations when properties are found." },
-            { role: "user", content: insightsPrompt }
-          ],
-          temperature: 0.7,
-          max_tokens: 100,
-        });
-        
-        responseMessage = insightsCompletion.choices[0].message.content;
-      } catch (error) {
-        console.error('Insights generation error:', error);
+          const insightsCompletion = await openai.chat.completions.create({
+            model: "gpt-3.5-turbo",
+            messages: [
+              { role: "system", content: "You are a helpful real estate assistant. Provide brief, friendly confirmations when properties are found." },
+              { role: "user", content: insightsPrompt }
+            ],
+            temperature: 0.7,
+            max_tokens: 100,
+          });
+          
+          responseMessage = insightsCompletion.choices[0].message.content;
+        } catch (error) {
+          console.error('Insights generation error:', error);
+        }
+      }
+      
+      // Final fallback: simple message
+      if (!responseMessage) {
+        responseMessage = `I found ${filteredProperties.length} propert${filteredProperties.length === 1 ? 'y' : 'ies'} matching your criteria!`;
       }
     }
     

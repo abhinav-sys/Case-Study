@@ -104,9 +104,11 @@ RESPONSE_TEMPLATES = {
         "Welcome! I can help you search for properties, answer questions, and provide real estate guidance. What would you like to know?"
     ],
     "search_property": [
-        "I'd be happy to help you find properties! Could you tell me more about what you're looking for? For example, location, budget, or number of bedrooms?",
-        "Great! Let me search for properties that match your criteria. What location are you interested in?",
-        "I can help you find the perfect property. What are your main requirements - location, price range, or property type?"
+        "I'd be happy to help you find properties! Let me search for options that match your criteria.",
+        "Great! I'll search for properties that fit your needs. Give me a moment to find the best matches.",
+        "Perfect! Let me find properties that match what you're looking for. I'll show you the best options available.",
+        "I can help you find the perfect property. Let me search our listings for you right away.",
+        "Excellent! I'll search for properties matching your requirements. You'll see the results shortly."
     ],
     "price_query": [
         "Property prices vary significantly based on location, size, and features. I can show you specific listings with prices if you'd like to search for properties.",
@@ -154,6 +156,9 @@ RESPONSE_TEMPLATES = {
 intent_classifier = None
 vectorizer = None
 label_encoder = None
+
+# Conversation memory (simple in-memory store, can be replaced with Redis/DB)
+conversation_memory = {}
 
 def train_intent_classifier():
     """Train the intent classification model"""
@@ -342,6 +347,21 @@ def extract_entities(message: str) -> Dict[str, any]:
     
     return entities
 
+def extract_conversation_entities(conversation_context: List) -> Dict:
+    """Extract entities from conversation history"""
+    if not conversation_context:
+        return {}
+    
+    entities = {}
+    for msg in conversation_context:
+        if isinstance(msg, dict) and msg.get("content"):
+            msg_entities = extract_entities(msg["content"])
+            # Merge entities (later messages override earlier ones)
+            for key, value in msg_entities.items():
+                if value is not None:
+                    entities[key] = value
+    return entities
+
 def generate_automated_response(intent: str, entities: Dict, confidence: float, conversation_context: List = None) -> str:
     """Generate an automated response based on intent and entities"""
     import random
@@ -350,19 +370,13 @@ def generate_automated_response(intent: str, entities: Dict, confidence: float, 
     templates = RESPONSE_TEMPLATES.get(intent, RESPONSE_TEMPLATES["general_question"])
     response = random.choice(templates)
     
-    # Check conversation context for continuity
-    has_location_context = False
-    has_budget_context = False
+    # Extract entities from conversation context for continuity
     if conversation_context:
-        for msg in conversation_context[-3:]:  # Check last 3 messages
-            if isinstance(msg, dict) and msg.get("content"):
-                msg_lower = msg["content"].lower()
-                # Check if location was mentioned before
-                for city in ["new york", "los angeles", "chicago", "miami", "boston", "seattle"]:
-                    if city in msg_lower and not entities.get("location"):
-                        entities["location"] = city.title()
-                        has_location_context = True
-                        break
+        context_entities = extract_conversation_entities(conversation_context)
+        # Merge context entities (fill in missing ones)
+        for key, value in context_entities.items():
+            if entities.get(key) is None and value is not None:
+                entities[key] = value
     
     # Enhance response with entity information (more natural flow)
     entity_parts = []
@@ -384,17 +398,23 @@ def generate_automated_response(intent: str, entities: Dict, confidence: float, 
         budget_str = f"${entities['budget']:,}"
         entity_parts.append(f"around {budget_str}")
     
-    # Build natural response
-    if entity_parts:
-        if intent == "search_property":
-            response = f"I'd be happy to help you find properties"
-            if entity_parts:
-                response += f" with {', '.join(entity_parts)}"
-            response += "! Let me search for you."
+    # Build natural response based on intent
+    if intent == "search_property":
+        if entity_parts:
+            # More natural phrasing
+            if len(entity_parts) == 1:
+                response = f"I'd be happy to help you find properties {entity_parts[0]}! Let me search for you."
+            elif len(entity_parts) == 2:
+                response = f"Perfect! I'll search for {entity_parts[0]} properties {entity_parts[1]}. Give me a moment."
+            else:
+                response = f"Great! I'll find properties with {', '.join(entity_parts[:-1])}, and {entity_parts[-1]}. Searching now!"
         else:
-            # For other intents, add entity info more naturally
-            if entity_parts:
-                response += f" I notice you mentioned {', '.join(entity_parts)}."
+            # No entities extracted, use base response
+            response = random.choice(RESPONSE_TEMPLATES["search_property"])
+    else:
+        # For other intents, add entity info more naturally
+        if entity_parts:
+            response += f" I notice you mentioned {', '.join(entity_parts)}."
     
     # Add follow-up question for low confidence or missing info
     if confidence < 0.6:
