@@ -17,6 +17,7 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5000;
 const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:8000';
+const CHATBOT_ML_SERVICE_URL = process.env.CHATBOT_ML_SERVICE_URL || 'http://localhost:8001';
 
 // Middleware
 app.use(cors());
@@ -482,18 +483,68 @@ Provide a helpful response (2-3 sentences) that:
   }
 };
 
-// Enhanced ChatGPT conversation handler with advanced AI features
+// ML-powered chatbot analysis
+const analyzeMessageWithML = async (userMessage) => {
+  try {
+    const response = await fetch(`${CHATBOT_ML_SERVICE_URL}/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: userMessage }),
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      return data;
+    }
+  } catch (error) {
+    console.log('⚠️ Chatbot ML service not available, using fallback');
+  }
+  return null;
+};
+
+// Enhanced ChatGPT conversation handler with advanced AI features + ML automation
 const handleChatGPTConversation = async (userMessage, conversationHistory = [], allProperties = []) => {
+  // First, try ML-powered analysis for automation
+  const mlAnalysis = await analyzeMessageWithML(userMessage);
+  
+  // Use ML intent classification to determine if it's a search query
+  if (mlAnalysis && mlAnalysis.intent === 'search_property') {
+    return null; // Proceed with property search
+  }
+  
+  // If ML provides automated response with high confidence, use it
+  if (mlAnalysis && mlAnalysis.confidence > 0.7 && mlAnalysis.automated_response) {
+    // Enhance ML response with property context if available
+    let enhancedResponse = mlAnalysis.automated_response;
+    
+    if (allProperties.length > 0 && mlAnalysis.entities.location) {
+      const locationProperties = allProperties.filter(p => 
+        p.location && p.location.toLowerCase().includes(mlAnalysis.entities.location.toLowerCase())
+      );
+      if (locationProperties.length > 0) {
+        enhancedResponse += ` I found ${locationProperties.length} properties in ${mlAnalysis.entities.location}. Would you like me to show them?`;
+      }
+    }
+    
+    return enhancedResponse;
+  }
+
+  // Fallback to OpenAI if available
   if (!openai) {
-    return null; // No OpenAI API key, return null to use fallback
+    // Use ML automated response as final fallback
+    if (mlAnalysis && mlAnalysis.automated_response) {
+      return mlAnalysis.automated_response;
+    }
+    return null;
   }
 
   try {
-    // Check if message is a property search query
-    const searchKeywords = ['find', 'search', 'show', 'properties', 'homes', 'houses', 'apartments', 'condos', 'buy', 'rent', 'bedroom', 'bathroom', 'budget', 'price', 'location', 'area', 'tell me', 'can you', 'i need', 'looking for'];
-    const isSearchQuery = searchKeywords.some(keyword => 
-      userMessage.toLowerCase().includes(keyword)
-    );
+    // Check if message is a property search query (using ML if available, otherwise keywords)
+    const isSearchQuery = mlAnalysis 
+      ? mlAnalysis.intent === 'search_property'
+      : ['find', 'search', 'show', 'properties', 'homes', 'houses', 'apartments', 'condos', 'buy', 'rent', 'bedroom', 'bathroom', 'budget', 'price', 'location', 'area', 'tell me', 'can you', 'i need', 'looking for'].some(keyword => 
+          userMessage.toLowerCase().includes(keyword)
+        );
 
     // If it's a search query, extract filters and return null to proceed with property search
     if (isSearchQuery) {
@@ -590,9 +641,28 @@ app.post('/api/properties/search', async (req, res) => {
     // Otherwise, proceed with property search
     let searchFilters = filters;
     
-    // If message is provided, try NLP extraction
+    // If message is provided, try ML entity extraction first, then NLP extraction
     if (message && !filters) {
-      searchFilters = await extractFiltersFromNLP(message);
+      // Try ML entity extraction
+      const mlAnalysis = await analyzeMessageWithML(message);
+      if (mlAnalysis && mlAnalysis.entities) {
+        const mlEntities = mlAnalysis.entities;
+        searchFilters = {
+          location: mlEntities.location || null,
+          maxBudget: mlEntities.budget || null,
+          bedrooms: mlEntities.bedrooms || null,
+          bathrooms: mlEntities.bathrooms || null,
+        };
+        // Remove null values
+        Object.keys(searchFilters).forEach(key => {
+          if (searchFilters[key] === null) delete searchFilters[key];
+        });
+      }
+      
+      // If ML didn't extract enough, fall back to NLP
+      if (!searchFilters || Object.keys(searchFilters).length === 0) {
+        searchFilters = await extractFiltersFromNLP(message);
+      }
     }
 
     let filteredProperties = filterProperties(allProperties, searchFilters || {});
