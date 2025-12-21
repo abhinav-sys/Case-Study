@@ -232,6 +232,15 @@ def predict_intent(message: str) -> Dict[str, any]:
 
 def extract_entities(message: str) -> Dict[str, any]:
     """Extract entities from user message using regex patterns"""
+    if not message or not isinstance(message, str):
+        return {
+            "location": None,
+            "budget": None,
+            "bedrooms": None,
+            "bathrooms": None,
+            "property_type": None
+        }
+    
     entities = {
         "location": None,
         "budget": None,
@@ -240,7 +249,11 @@ def extract_entities(message: str) -> Dict[str, any]:
         "property_type": None
     }
     
-    message_lower = message.lower()
+    message_lower = message.lower().strip()
+    
+    # Skip if message is too short
+    if len(message_lower) < 2:
+        return entities
     
     # Extract location (extended city names list)
     cities = [
@@ -465,6 +478,11 @@ async def analyze_message(request: Request):
         message = message.strip()
         if len(message) < 1:
             raise HTTPException(status_code=400, detail="Message cannot be empty")
+        
+        # Limit message length to prevent abuse
+        if len(message) > 1000:
+            message = message[:1000]
+            print(f"⚠️ Message truncated to 1000 characters")
         
         # Predict intent
         intent_result = predict_intent(message)

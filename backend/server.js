@@ -483,8 +483,36 @@ Provide a helpful response (2-3 sentences) that:
   }
 };
 
+// Check if ML service is available
+let mlServiceAvailable = false;
+const checkMLServiceHealth = async () => {
+  try {
+    const response = await fetch(`${CHATBOT_ML_SERVICE_URL}/health`, {
+      method: 'GET',
+      signal: AbortSignal.timeout(2000) // 2 second timeout
+    });
+    if (response.ok) {
+      const data = await response.json();
+      mlServiceAvailable = data.model_loaded === true && data.model_functional === true;
+      return mlServiceAvailable;
+    }
+  } catch (error) {
+    mlServiceAvailable = false;
+  }
+  return false;
+};
+
+// Check health on startup and periodically
+checkMLServiceHealth();
+setInterval(checkMLServiceHealth, 60000); // Check every minute
+
 // ML-powered chatbot analysis with timeout and retry
 const analyzeMessageWithML = async (userMessage, conversationHistory = []) => {
+  // Skip if service is known to be unavailable
+  if (!mlServiceAvailable && !CHATBOT_ML_SERVICE_URL.includes('localhost')) {
+    return null;
+  }
+  
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
@@ -503,11 +531,14 @@ const analyzeMessageWithML = async (userMessage, conversationHistory = []) => {
     
     if (response.ok) {
       const data = await response.json();
+      mlServiceAvailable = true; // Mark as available on success
       return data;
     } else {
       console.log(`⚠️ Chatbot ML service returned ${response.status}, using fallback`);
+      mlServiceAvailable = false;
     }
   } catch (error) {
+    mlServiceAvailable = false;
     if (error.name === 'AbortError') {
       console.log('⚠️ Chatbot ML service timeout, using fallback');
     } else {
