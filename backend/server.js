@@ -483,21 +483,36 @@ Provide a helpful response (2-3 sentences) that:
   }
 };
 
-// ML-powered chatbot analysis
-const analyzeMessageWithML = async (userMessage) => {
+// ML-powered chatbot analysis with timeout and retry
+const analyzeMessageWithML = async (userMessage, conversationHistory = []) => {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+    
     const response = await fetch(`${CHATBOT_ML_SERVICE_URL}/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: userMessage }),
+      body: JSON.stringify({ 
+        message: userMessage,
+        conversation_history: conversationHistory.slice(-5) // Last 5 messages for context
+      }),
+      signal: controller.signal
     });
+    
+    clearTimeout(timeoutId);
     
     if (response.ok) {
       const data = await response.json();
       return data;
+    } else {
+      console.log(`⚠️ Chatbot ML service returned ${response.status}, using fallback`);
     }
   } catch (error) {
-    console.log('⚠️ Chatbot ML service not available, using fallback');
+    if (error.name === 'AbortError') {
+      console.log('⚠️ Chatbot ML service timeout, using fallback');
+    } else {
+      console.log('⚠️ Chatbot ML service not available, using fallback');
+    }
   }
   return null;
 };
@@ -505,24 +520,46 @@ const analyzeMessageWithML = async (userMessage) => {
 // Enhanced ChatGPT conversation handler with advanced AI features + ML automation
 const handleChatGPTConversation = async (userMessage, conversationHistory = [], allProperties = []) => {
   // First, try ML-powered analysis for automation
-  const mlAnalysis = await analyzeMessageWithML(userMessage);
+  const mlAnalysis = await analyzeMessageWithML(userMessage, conversationHistory);
   
   // Use ML intent classification to determine if it's a search query
   if (mlAnalysis && mlAnalysis.intent === 'search_property') {
     return null; // Proceed with property search
   }
   
-  // If ML provides automated response with high confidence, use it
-  if (mlAnalysis && mlAnalysis.confidence > 0.7 && mlAnalysis.automated_response) {
+  // If ML provides automated response with good quality, use it
+  const shouldUseML = mlAnalysis && (
+    (mlAnalysis.should_use_ml_response === true) ||
+    (mlAnalysis.confidence > 0.7 && mlAnalysis.quality_score > 0.6)
+  );
+  
+  if (shouldUseML && mlAnalysis.automated_response) {
     // Enhance ML response with property context if available
     let enhancedResponse = mlAnalysis.automated_response;
     
+    // Add property count if location is mentioned
     if (allProperties.length > 0 && mlAnalysis.entities.location) {
       const locationProperties = allProperties.filter(p => 
         p.location && p.location.toLowerCase().includes(mlAnalysis.entities.location.toLowerCase())
       );
       if (locationProperties.length > 0) {
         enhancedResponse += ` I found ${locationProperties.length} properties in ${mlAnalysis.entities.location}. Would you like me to show them?`;
+      } else if (mlAnalysis.intent === 'search_property') {
+        // If searching but no properties in that location, suggest alternatives
+        const availableLocations = [...new Set(allProperties.map(p => p.location).filter(Boolean))].slice(0, 3);
+        if (availableLocations.length > 0) {
+          enhancedResponse += ` We don't have properties in ${mlAnalysis.entities.location}, but we have properties in ${availableLocations.join(', ')}. Would you like to see those?`;
+        }
+      }
+    }
+    
+    // Add entity-based suggestions
+    if (mlAnalysis.suggested_actions && mlAnalysis.suggested_actions.length > 0) {
+      const actions = mlAnalysis.suggested_actions;
+      if (actions.includes('ask_location') && !mlAnalysis.entities.location) {
+        enhancedResponse += " What location are you interested in?";
+      } else if (actions.includes('ask_budget') && !mlAnalysis.entities.budget) {
+        enhancedResponse += " What's your budget range?";
       }
     }
     
@@ -656,8 +693,8 @@ app.post('/api/properties/search', async (req, res) => {
     
     // If message is provided, try ML entity extraction first, then NLP extraction
     if (message && !filters) {
-      // Try ML entity extraction
-      const mlAnalysis = await analyzeMessageWithML(message);
+      // Try ML entity extraction with conversation context
+      const mlAnalysis = await analyzeMessageWithML(message, conversationHistory || []);
       if (mlAnalysis && mlAnalysis.entities) {
         const mlEntities = mlAnalysis.entities;
         searchFilters = {
@@ -666,14 +703,24 @@ app.post('/api/properties/search', async (req, res) => {
           bedrooms: mlEntities.bedrooms || null,
           bathrooms: mlEntities.bathrooms || null,
         };
+        
+        // Handle property type if extracted
+        if (mlEntities.property_type) {
+          // Property type can be used for filtering if needed
+          searchFilters.property_type = mlEntities.property_type;
+        }
+        
         // Remove null values
         Object.keys(searchFilters).forEach(key => {
           if (searchFilters[key] === null) delete searchFilters[key];
         });
+        
+        console.log(`✅ ML extracted filters:`, searchFilters);
       }
       
       // If ML didn't extract enough, fall back to NLP
       if (!searchFilters || Object.keys(searchFilters).length === 0) {
+        console.log('⚠️ ML extraction insufficient, using NLP fallback');
         searchFilters = await extractFiltersFromNLP(message);
       }
     }

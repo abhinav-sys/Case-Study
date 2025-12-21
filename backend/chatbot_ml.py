@@ -27,50 +27,72 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Training data for intent classification
+# Enhanced training data for intent classification (more examples = better accuracy)
 INTENT_TRAINING_DATA = {
     "greeting": [
         "hello", "hi", "hey", "good morning", "good afternoon", "good evening",
-        "how are you", "what's up", "greetings", "hi there"
+        "how are you", "what's up", "greetings", "hi there", "hello there",
+        "hey there", "good day", "morning", "afternoon", "evening", "greetings",
+        "howdy", "what's happening", "nice to meet you", "pleased to meet you"
     ],
     "search_property": [
         "find properties", "show me homes", "search for houses", "looking for apartments",
         "find a place", "show properties", "search properties", "find homes",
-        "i need a house", "looking for property", "find me a home", "show me listings"
+        "i need a house", "looking for property", "find me a home", "show me listings",
+        "i want to buy", "i'm looking for", "can you find", "help me find",
+        "show available", "what properties", "list properties", "browse homes",
+        "search listings", "find apartments", "show houses", "property search",
+        "home search", "looking to buy", "want to rent", "need a property",
+        "find me something", "what do you have", "show me options", "available properties"
     ],
     "price_query": [
         "what is the price", "how much does it cost", "what's the price range",
         "price of properties", "cost of homes", "property prices", "home prices",
-        "what are prices", "how much", "pricing information"
+        "what are prices", "how much", "pricing information", "price range",
+        "how expensive", "what costs", "price information", "average price",
+        "typical price", "price per square foot", "cost per sqft", "market price"
     ],
     "location_query": [
         "where are properties", "what locations", "which areas", "best locations",
-        "where to buy", "good areas", "property locations", "best neighborhoods"
+        "where to buy", "good areas", "property locations", "best neighborhoods",
+        "what areas", "which cities", "best places", "good neighborhoods",
+        "safe areas", "popular locations", "growing areas", "upcoming areas"
     ],
     "investment_advice": [
         "is it a good investment", "investment potential", "should i invest",
         "good for investment", "investment advice", "investment opportunities",
-        "return on investment", "investment value"
+        "return on investment", "investment value", "worth investing",
+        "investment returns", "roi", "appreciation potential", "rental yield",
+        "investment property", "buy to rent", "investment strategy"
     ],
     "property_details": [
         "tell me about", "property features", "what amenities", "property details",
-        "more information", "property specs", "house features", "what does it have"
+        "more information", "property specs", "house features", "what does it have",
+        "property info", "details about", "more about", "specifications",
+        "what features", "amenities included", "property amenities", "house specs"
     ],
     "budget_planning": [
         "help with budget", "budget planning", "affordability", "what can i afford",
-        "budget advice", "financial planning", "loan information", "mortgage help"
+        "budget advice", "financial planning", "loan information", "mortgage help",
+        "down payment", "monthly payment", "mortgage calculator", "affordability calculator",
+        "how much can i afford", "budget calculator", "loan eligibility", "mortgage rates"
     ],
     "documents": [
         "what documents", "required documents", "paperwork needed", "legal documents",
-        "buying documents", "sale documents", "property documents"
+        "buying documents", "sale documents", "property documents", "documents needed",
+        "required paperwork", "legal paperwork", "buying process", "sale process",
+        "what papers", "documentation needed", "required papers", "legal requirements"
     ],
     "goodbye": [
         "bye", "goodbye", "see you", "thanks", "thank you", "appreciate it",
-        "that's all", "done", "finished"
+        "that's all", "done", "finished", "thank you very much", "thanks a lot",
+        "appreciate your help", "that's everything", "all done", "no more questions"
     ],
     "general_question": [
         "how does", "what is", "explain", "tell me about", "can you help",
-        "i want to know", "what are", "how do i", "help me understand"
+        "i want to know", "what are", "how do i", "help me understand",
+        "what does", "how can", "what should", "how to", "can you explain",
+        "i don't understand", "clarify", "what means", "help me with"
     ]
 }
 
@@ -146,17 +168,28 @@ def train_intent_classifier():
             texts.append(example.lower())
             labels.append(intent)
     
-    # Create and train pipeline
-    vectorizer = TfidfVectorizer(max_features=1000, ngram_range=(1, 2), stop_words='english')
+    # Create and train pipeline with better parameters
+    vectorizer = TfidfVectorizer(
+        max_features=1500,  # Increased features for better accuracy
+        ngram_range=(1, 3),  # Include trigrams for better context
+        stop_words='english',
+        min_df=1,  # Minimum document frequency
+        max_df=0.95,  # Maximum document frequency
+        sublinear_tf=True  # Apply sublinear tf scaling
+    )
     label_encoder = LabelEncoder()
     
     X = vectorizer.fit_transform(texts)
     y = label_encoder.fit_transform(labels)
     
-    intent_classifier = MultinomialNB(alpha=0.1)
+    # Use better alpha for smoothing
+    intent_classifier = MultinomialNB(alpha=0.05)  # Lower alpha for better sensitivity
     intent_classifier.fit(X, y)
     
-    print("✅ Intent classifier trained successfully")
+    # Calculate and log training accuracy
+    train_predictions = intent_classifier.predict(X)
+    train_accuracy = (train_predictions == y).mean()
+    print(f"✅ Intent classifier trained successfully (training accuracy: {train_accuracy*100:.1f}%)")
     return True
 
 def predict_intent(message: str) -> Dict[str, any]:
@@ -204,23 +237,60 @@ def extract_entities(message: str) -> Dict[str, any]:
     
     message_lower = message.lower()
     
-    # Extract location (common city names)
-    cities = ["new york", "los angeles", "chicago", "houston", "phoenix", "philadelphia",
-              "san antonio", "san diego", "dallas", "san jose", "miami", "atlanta",
-              "boston", "seattle", "denver", "detroit", "minneapolis", "portland"]
+    # Extract location (extended city names list)
+    cities = [
+        "new york", "los angeles", "chicago", "houston", "phoenix", "philadelphia",
+        "san antonio", "san diego", "dallas", "san jose", "miami", "atlanta",
+        "boston", "seattle", "denver", "detroit", "minneapolis", "portland",
+        "austin", "jacksonville", "fort worth", "columbus", "charlotte", "san francisco",
+        "indianapolis", "washington", "memphis", "baltimore", "milwaukee", "el paso",
+        "nashville", "oklahoma city", "las vegas", "louisville", "portland", "tucson",
+        "fresno", "sacramento", "kansas city", "mesa", "atlanta", "omaha", "raleigh",
+        "virginia beach", "oakland", "minneapolis", "tulsa", "arlington", "tampa"
+    ]
+    
+    # Also check for state abbreviations and common patterns
+    state_patterns = {
+        "california": ["california", "ca", "cali"],
+        "texas": ["texas", "tx"],
+        "florida": ["florida", "fl"],
+        "new york": ["new york", "ny", "nyc"],
+        "illinois": ["illinois", "il", "chicago"],
+        "pennsylvania": ["pennsylvania", "pa", "philadelphia"]
+    }
+    
+    # Check for city names first
     for city in cities:
         if city in message_lower:
             entities["location"] = city.title()
             break
     
-    # Extract budget
+    # If no city found, check for state patterns
+    if not entities["location"]:
+        for state, patterns in state_patterns.items():
+            if any(pattern in message_lower for pattern in patterns):
+                # Try to find a city in that state
+                for city in cities:
+                    if city in message_lower:
+                        entities["location"] = city.title()
+                        break
+                break
+    
+    # Extract budget (enhanced patterns)
     budget_patterns = [
-        r'\$?(\d+)\s*(?:million|mil|m)',
-        r'\$?(\d+)\s*(?:thousand|k)',
+        r'\$?(\d+\.?\d*)\s*(?:million|mil|m)\b',
+        r'\$?(\d+\.?\d*)\s*(?:thousand|k)\b',
         r'\$?(\d{1,3}(?:,\d{3})*(?:\.\d+)?)',
-        r'under\s+\$?(\d+)',
-        r'below\s+\$?(\d+)',
-        r'less than\s+\$?(\d+)'
+        r'under\s+\$?(\d{1,3}(?:,\d{3})*(?:\.\d+)?)',
+        r'below\s+\$?(\d{1,3}(?:,\d{3})*(?:\.\d+)?)',
+        r'less than\s+\$?(\d{1,3}(?:,\d{3})*(?:\.\d+)?)',
+        r'max\s+\$?(\d{1,3}(?:,\d{3})*(?:\.\d+)?)',
+        r'maximum\s+\$?(\d{1,3}(?:,\d{3})*(?:\.\d+)?)',
+        r'up to\s+\$?(\d{1,3}(?:,\d{3})*(?:\.\d+)?)',
+        r'around\s+\$?(\d{1,3}(?:,\d{3})*(?:\.\d+)?)',
+        r'about\s+\$?(\d{1,3}(?:,\d{3})*(?:\.\d+)?)',
+        r'approximately\s+\$?(\d{1,3}(?:,\d{3})*(?:\.\d+)?)',
+        r'budget\s+(?:of|is)?\s+\$?(\d{1,3}(?:,\d{3})*(?:\.\d+)?)'
     ]
     for pattern in budget_patterns:
         match = re.search(pattern, message_lower)
@@ -234,15 +304,35 @@ def extract_entities(message: str) -> Dict[str, any]:
                 entities["budget"] = int(float(value))
             break
     
-    # Extract bedrooms
-    bedroom_match = re.search(r'(\d+)\s*(?:bed|bedroom|br|beds)', message_lower)
-    if bedroom_match:
-        entities["bedrooms"] = int(bedroom_match.group(1))
+    # Extract bedrooms (enhanced patterns)
+    bedroom_patterns = [
+        r'(\d+)\s*(?:bed|bedroom|br|beds|bedrooms)\b',
+        r'(\d+)\s*(?:bedroom|bed)\s+(?:property|home|house|apartment)',
+        r'(\d+)\s*(?:br|bed)',
+        r'(\d+)\s*(?:room|rooms)',
+        r'(\d+)\s*(?:bedroom|bed)'
+    ]
+    for pattern in bedroom_patterns:
+        bedroom_match = re.search(pattern, message_lower)
+        if bedroom_match:
+            entities["bedrooms"] = int(bedroom_match.group(1))
+            break
     
-    # Extract bathrooms
-    bathroom_match = re.search(r'(\d+)\s*(?:bath|bathroom|ba)', message_lower)
-    if bathroom_match:
-        entities["bathrooms"] = int(bathroom_match.group(1))
+    # Extract bathrooms (enhanced patterns)
+    bathroom_patterns = [
+        r'(\d+)\s*(?:bath|bathroom|ba|baths|bathrooms)\b',
+        r'(\d+)\s*(?:bathroom|bath)',
+        r'(\d+)\s*(?:ba|bath)',
+        r'(\d+(?:\.\d+)?)\s*(?:bath|bathroom)'  # Handle 1.5, 2.5 bathrooms
+    ]
+    for pattern in bathroom_patterns:
+        bathroom_match = re.search(pattern, message_lower)
+        if bathroom_match:
+            try:
+                entities["bathrooms"] = float(bathroom_match.group(1))
+            except:
+                entities["bathrooms"] = int(float(bathroom_match.group(1)))
+            break
     
     # Extract property type
     if any(word in message_lower for word in ["apartment", "condo", "condominium"]):
@@ -252,7 +342,7 @@ def extract_entities(message: str) -> Dict[str, any]:
     
     return entities
 
-def generate_automated_response(intent: str, entities: Dict, confidence: float) -> str:
+def generate_automated_response(intent: str, entities: Dict, confidence: float, conversation_context: List = None) -> str:
     """Generate an automated response based on intent and entities"""
     import random
     
@@ -260,23 +350,57 @@ def generate_automated_response(intent: str, entities: Dict, confidence: float) 
     templates = RESPONSE_TEMPLATES.get(intent, RESPONSE_TEMPLATES["general_question"])
     response = random.choice(templates)
     
-    # Enhance response with entity information
+    # Check conversation context for continuity
+    has_location_context = False
+    has_budget_context = False
+    if conversation_context:
+        for msg in conversation_context[-3:]:  # Check last 3 messages
+            if isinstance(msg, dict) and msg.get("content"):
+                msg_lower = msg["content"].lower()
+                # Check if location was mentioned before
+                for city in ["new york", "los angeles", "chicago", "miami", "boston", "seattle"]:
+                    if city in msg_lower and not entities.get("location"):
+                        entities["location"] = city.title()
+                        has_location_context = True
+                        break
+    
+    # Enhance response with entity information (more natural flow)
+    entity_parts = []
+    
     if entities.get("location"):
-        response += f" I see you're interested in {entities['location']}."
+        entity_parts.append(f"in {entities['location']}")
+    
+    if entities.get("bedrooms"):
+        entity_parts.append(f"{entities['bedrooms']} bedroom{'s' if entities['bedrooms'] > 1 else ''}")
+    
+    if entities.get("bathrooms"):
+        bathrooms = entities['bathrooms']
+        if isinstance(bathrooms, float) and bathrooms % 1 != 0:
+            entity_parts.append(f"{bathrooms} bathrooms")
+        else:
+            entity_parts.append(f"{int(bathrooms)} bathroom{'s' if bathrooms > 1 else ''}")
     
     if entities.get("budget"):
         budget_str = f"${entities['budget']:,}"
-        response += f" For a budget around {budget_str}, I can help you find suitable options."
+        entity_parts.append(f"around {budget_str}")
     
-    if entities.get("bedrooms"):
-        response += f" You're looking for {entities['bedrooms']} bedroom properties."
+    # Build natural response
+    if entity_parts:
+        if intent == "search_property":
+            response = f"I'd be happy to help you find properties"
+            if entity_parts:
+                response += f" with {', '.join(entity_parts)}"
+            response += "! Let me search for you."
+        else:
+            # For other intents, add entity info more naturally
+            if entity_parts:
+                response += f" I notice you mentioned {', '.join(entity_parts)}."
     
-    if entities.get("bathrooms"):
-        response += f" With {entities['bathrooms']} bathrooms."
-    
-    # Add follow-up question for low confidence
+    # Add follow-up question for low confidence or missing info
     if confidence < 0.6:
         response += " Could you provide a bit more detail about what you're looking for?"
+    elif intent == "search_property" and not entities.get("location") and not entities.get("budget"):
+        response += " What location or budget range are you considering?"
     
     return response
 
@@ -312,9 +436,15 @@ async def analyze_message(request: Request):
     try:
         data = await request.json()
         message = data.get("message", "")
+        conversation_context = data.get("conversation_history", [])
         
-        if not message:
-            raise HTTPException(status_code=400, detail="Message is required")
+        if not message or not isinstance(message, str):
+            raise HTTPException(status_code=400, detail="Message is required and must be a string")
+        
+        # Clean and normalize message
+        message = message.strip()
+        if len(message) < 1:
+            raise HTTPException(status_code=400, detail="Message cannot be empty")
         
         # Predict intent
         intent_result = predict_intent(message)
@@ -322,12 +452,16 @@ async def analyze_message(request: Request):
         # Extract entities
         entities = extract_entities(message)
         
-        # Generate automated response
+        # Generate automated response with context
         automated_response = generate_automated_response(
             intent_result["intent"],
             entities,
-            intent_result["confidence"]
+            intent_result["confidence"],
+            conversation_context
         )
+        
+        # Calculate response quality score
+        quality_score = calculate_response_quality(intent_result, entities)
         
         return {
             "success": True,
@@ -336,12 +470,40 @@ async def analyze_message(request: Request):
             "top_intents": intent_result.get("top_intents", []),
             "entities": entities,
             "automated_response": automated_response,
-            "suggested_actions": get_suggested_actions(intent_result["intent"], entities)
+            "suggested_actions": get_suggested_actions(intent_result["intent"], entities),
+            "quality_score": quality_score,
+            "should_use_ml_response": intent_result["confidence"] > 0.65 and quality_score > 0.6
         }
     except HTTPException:
         raise
     except Exception as e:
+        print(f"Analysis error: {e}")
         raise HTTPException(status_code=500, detail=f"Analysis error: {str(e)}")
+
+def calculate_response_quality(intent_result: Dict, entities: Dict) -> float:
+    """Calculate quality score for the response (0-1)"""
+    score = 0.0
+    
+    # Intent confidence contributes 50%
+    score += intent_result.get("confidence", 0) * 0.5
+    
+    # Entity extraction contributes 30%
+    entity_count = sum(1 for v in entities.values() if v is not None)
+    entity_score = min(entity_count / 5.0, 1.0)  # Max 5 entities
+    score += entity_score * 0.3
+    
+    # Intent clarity contributes 20%
+    top_intents = intent_result.get("top_intents", [])
+    if top_intents and len(top_intents) > 0:
+        # Higher score if top intent is much more confident than second
+        if len(top_intents) > 1:
+            confidence_diff = top_intents[0]["confidence"] - top_intents[1]["confidence"]
+            clarity_score = min(confidence_diff * 2, 1.0)  # Normalize
+        else:
+            clarity_score = 1.0
+        score += clarity_score * 0.2
+    
+    return min(score, 1.0)
 
 def get_suggested_actions(intent: str, entities: Dict) -> List[str]:
     """Get suggested actions based on intent"""
