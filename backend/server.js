@@ -329,7 +329,9 @@ app.get('/', (req, res) => {
 
     mongodb_connected: mongoose.connection.readyState === 1,
 
-    ml_service_url: ML_SERVICE_URL
+    ml_service_url: ML_SERVICE_URL,
+    chatbot_ml_service_url: CHATBOT_ML_SERVICE_URL,
+    chatbot_ml_available: mlServiceAvailable
 
   });
 
@@ -337,11 +339,18 @@ app.get('/', (req, res) => {
 
 
 
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
+  // Check ML service availability
+  const mlHealth = await checkMLServiceHealth();
+  
   res.json({ 
     status: 'ok', 
     message: 'Real Estate Chatbot API is running',
-    ml_service_url: ML_SERVICE_URL
+    ml_service_url: ML_SERVICE_URL,
+    chatbot_ml_service_url: CHATBOT_ML_SERVICE_URL,
+    chatbot_ml_available: mlHealth,
+    mongodb_connected: mongoose.connection.readyState === 1,
+    openai_configured: !!openai
   });
 });
 
