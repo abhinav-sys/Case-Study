@@ -1111,35 +1111,8 @@ const Chatbot = ({ onPropertiesFound, onPropertySave, onAddToComparison, sidebar
               />
 
               <div className="flex items-center justify-between pb-2">
-                <div className="flex items-center gap-2 text-white/70 text-xs">
-                  <span className="hidden sm:inline">Drag handle</span>
-                </div>
+                <div className="flex items-center gap-2 text-white/70 text-xs" />
                 <div className="flex items-center gap-2">
-                  <motion.button
-                    onClick={() => {
-                      const expandedHeight = Math.min(getMaxResultsHeight(), window.innerHeight * 0.6);
-                      setResultsPanelHeight(expandedHeight);
-                      setResultsExpanded(true);
-                    }}
-                    className="p-2 rounded-lg bg-white/10 hover:bg-white/15 text-white/80 hover:text-white border border-white/10"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    aria-label="Expand results"
-                  >
-                    <Maximize2 size={16} />
-                  </motion.button>
-                  <motion.button
-                    onClick={() => {
-                      setResultsPanelHeight(280);
-                      setResultsExpanded(false);
-                    }}
-                    className="p-2 rounded-lg bg-white/10 hover:bg-white/15 text-white/80 hover:text-white border border-white/10"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    aria-label="Collapse results"
-                  >
-                    <Minimize2 size={16} />
-                  </motion.button>
                   <motion.button
                     onClick={() => {
                       setSearchResults([]);
