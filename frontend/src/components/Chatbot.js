@@ -488,6 +488,12 @@ const Chatbot = ({ onPropertiesFound, onPropertySave, onAddToComparison, sidebar
   const [messageReactions, setMessageReactions] = useState({});
   const [showResultsPanel, setShowResultsPanel] = useState(true);
   const [resultsExpanded, setResultsExpanded] = useState(false);
+  const MIN_RESULTS_HEIGHT = 110;
+  const getMaxResultsHeight = () => {
+    if (typeof window === 'undefined') return 700;
+    return Math.max(MIN_RESULTS_HEIGHT, window.innerHeight * 0.7);
+  };
+
   const [resultsPanelHeight, setResultsPanelHeight] = useState(320);
   const [isResizingResults, setIsResizingResults] = useState(false);
   const resizeStartY = useRef(0);
@@ -519,8 +525,8 @@ const Chatbot = ({ onPropertiesFound, onPropertySave, onAddToComparison, sidebar
     const handleMove = (e) => {
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
       const delta = clientY - resizeStartY.current;
-      const minHeight = 220;
-      const maxHeight = Math.max(minHeight, window.innerHeight * 0.7);
+      const minHeight = MIN_RESULTS_HEIGHT;
+      const maxHeight = getMaxResultsHeight();
       const next = Math.min(Math.max(resizeStartHeight.current - delta, minHeight), maxHeight);
       setResultsPanelHeight(next);
       setResultsExpanded(next > window.innerHeight * 0.45);
@@ -1077,40 +1083,41 @@ const Chatbot = ({ onPropertiesFound, onPropertySave, onAddToComparison, sidebar
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 50 }}
               transition={{ duration: 0.5 }}
-              className="px-6 py-4 backdrop-blur-xl bg-slate-800/50 border-t border-white/10 rounded-3xl overflow-hidden shadow-2xl"
+              className="relative px-6 pt-8 pb-4 backdrop-blur-xl bg-slate-800/50 border-t border-white/10 rounded-3xl overflow-hidden shadow-2xl"
               style={{
                 height: `${resultsPanelHeight}px`,
               }}
             >
+              <div
+                className="absolute left-1/2 -translate-x-1/2 top-2 h-2 w-20 rounded-full bg-white/25 cursor-row-resize border border-white/10 shadow-sm"
+                role="slider"
+                aria-valuemin={MIN_RESULTS_HEIGHT}
+                aria-valuemax={Math.floor(getMaxResultsHeight())}
+                aria-valuenow={Math.floor(resultsPanelHeight)}
+                aria-label="Resize search results"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  resizeStartY.current = e.clientY;
+                  resizeStartHeight.current = resultsPanelHeight;
+                  setIsResizingResults(true);
+                }}
+                onTouchStart={(e) => {
+                  const touch = e.touches?.[0];
+                  if (!touch) return;
+                  resizeStartY.current = touch.clientY;
+                  resizeStartHeight.current = resultsPanelHeight;
+                  setIsResizingResults(true);
+                }}
+              />
+
               <div className="flex items-center justify-between pb-2">
-                <div className="flex items-center gap-3 text-white/70 text-xs">
-                  <div
-                    className="h-1.5 w-16 rounded-full bg-white/25 cursor-row-resize"
-                    role="slider"
-                    aria-valuemin={220}
-                    aria-valuemax={Math.max(220, Math.floor(window.innerHeight * 0.7))}
-                    aria-valuenow={Math.floor(resultsPanelHeight)}
-                    aria-label="Resize search results"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      resizeStartY.current = e.clientY;
-                      resizeStartHeight.current = resultsPanelHeight;
-                      setIsResizingResults(true);
-                    }}
-                    onTouchStart={(e) => {
-                      const touch = e.touches?.[0];
-                      if (!touch) return;
-                      resizeStartY.current = touch.clientY;
-                      resizeStartHeight.current = resultsPanelHeight;
-                      setIsResizingResults(true);
-                    }}
-                  />
-                  <span className="hidden sm:inline">Drag to resize</span>
+                <div className="flex items-center gap-2 text-white/70 text-xs">
+                  <span className="hidden sm:inline">Drag handle</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <motion.button
                     onClick={() => {
-                      const expandedHeight = Math.min(window.innerHeight * 0.6, window.innerHeight * 0.7);
+                      const expandedHeight = Math.min(getMaxResultsHeight(), window.innerHeight * 0.6);
                       setResultsPanelHeight(expandedHeight);
                       setResultsExpanded(true);
                     }}
