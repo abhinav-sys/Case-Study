@@ -131,6 +131,118 @@ const filterProperties = (properties, filters) => {
   });
 };
 
+// Basic text helpers for semantic/fuzzy scoring
+const normalizeText = (text = '') => text
+  .toString()
+  .toLowerCase()
+  .replace(/[^a-z0-9\s]/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim();
+
+const tokenize = (text = '') => {
+  const normalized = normalizeText(text);
+  if (!normalized) return [];
+  return normalized.split(' ').filter(Boolean);
+};
+
+const jaccardSimilarity = (aTokens, bTokens) => {
+  const a = new Set(aTokens);
+  const b = new Set(bTokens);
+  const intersection = new Set([...a].filter(x => b.has(x)));
+  const union = new Set([...a, ...b]);
+  if (union.size === 0) return 0;
+  return intersection.size / union.size;
+};
+
+const computeSemanticScore = (property, queryTokens, filters = {}) => {
+  const parts = [
+    property.title,
+    property.description,
+    property.location,
+    property.property_type,
+    Array.isArray(property.amenities) ? property.amenities.join(' ') : '',
+    Array.isArray(property.features) ? property.features.join(' ') : '',
+  ].filter(Boolean);
+
+  const targetTokens = tokenize(parts.join(' '));
+  if (targetTokens.length === 0 || queryTokens.length === 0) return 0;
+
+  let score = jaccardSimilarity(queryTokens, targetTokens);
+
+  // Boosts for substring matches and key fields
+  const normalizedQuery = queryTokens.join(' ');
+  const normalizedText = normalizeText(parts.join(' '));
+  if (normalizedText.includes(normalizedQuery)) score += 0.25;
+
+  const locationMatch = filters.location
+    && property.location
+    && normalizeText(property.location).includes(normalizeText(filters.location));
+  if (locationMatch) score += 0.1;
+
+  const amenityHits = Array.isArray(property.amenities)
+    ? property.amenities.filter(a => normalizeText(a).includes(normalizedQuery)).length
+    : 0;
+  if (amenityHits > 0) score += Math.min(0.15, amenityHits * 0.05);
+
+  const typeMatch = filters.property_type
+    && property.property_type
+    && normalizeText(property.property_type).includes(normalizeText(filters.property_type));
+  if (typeMatch) score += 0.05;
+
+  return score;
+};
+
+const semanticRankProperties = (properties = [], query = '', filters = {}) => {
+  if (!query || !Array.isArray(properties) || properties.length === 0) {
+    return { ranked: properties, bestScore: 0, scored: [] };
+  }
+
+  const queryTokens = tokenize(query);
+  if (queryTokens.length === 0) return { ranked: properties, bestScore: 0, scored: [] };
+
+  const scored = properties.map((property) => ({
+    property,
+    score: computeSemanticScore(property, queryTokens, filters),
+  }));
+
+  scored.sort((a, b) => b.score - a.score);
+  return {
+    ranked: scored.map(item => item.property),
+    bestScore: scored.length > 0 ? scored[0].score : 0,
+    scored,
+  };
+};
+
+// Derive quick pricing stats from a result set so the bot can answer things like
+// "average price in Miami" while still returning the property list.
+const computePropertyStats = (properties = [], filters = {}) => {
+  if (!Array.isArray(properties) || properties.length === 0) return null;
+
+  const prices = properties
+    .map(p => (typeof p.predicted_price === 'number' ? p.predicted_price : p.price))
+    .filter(price => typeof price === 'number' && !Number.isNaN(price) && price > 0);
+
+  if (prices.length === 0) return null;
+
+  const sorted = [...prices].sort((a, b) => a - b);
+  const sum = prices.reduce((acc, price) => acc + price, 0);
+  const average = Math.round(sum / prices.length);
+  const median = sorted.length % 2 === 1
+    ? sorted[Math.floor(sorted.length / 2)]
+    : Math.round((sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2);
+
+  return {
+    average,
+    median,
+    min: Math.min(...prices),
+    max: Math.max(...prices),
+    count: prices.length,
+    location: filters?.location || null,
+  };
+};
+
+const formatCurrency = (value) => `$${Math.round(value).toLocaleString()}`;
+
 // Extract filters from natural language using OpenAI (bonus feature)
 const extractFiltersFromNLP = async (userMessage) => {
   if (!openai) {
@@ -714,6 +826,8 @@ Always prioritize accuracy, safety, and clarity. If structured property data is 
 app.post('/api/properties/search', async (req, res) => {
   try {
     const { filters, message, predict, conversationHistory } = req.body;
+    let mlAnalysis = null;
+    let usedSemanticFallback = false;
     
     const allProperties = mergePropertyData();
     
@@ -741,7 +855,7 @@ app.post('/api/properties/search', async (req, res) => {
     // If message is provided, try ML entity extraction first, then NLP extraction
     if (message && !filters) {
       // Try ML entity extraction with conversation context
-      const mlAnalysis = await analyzeMessageWithML(message, conversationHistory || []);
+      mlAnalysis = await analyzeMessageWithML(message, conversationHistory || []);
       if (mlAnalysis && mlAnalysis.entities) {
         const mlEntities = mlAnalysis.entities;
         searchFilters = {
@@ -790,6 +904,34 @@ app.post('/api/properties/search', async (req, res) => {
         }
       }
     }
+
+    // Semantic ranking: improve relevance for natural-language queries
+    if (message && filteredProperties.length > 0) {
+      const { ranked } = semanticRankProperties(filteredProperties, message, searchFilters);
+      filteredProperties = ranked;
+    }
+
+    // If no strict matches, try semantic fallback over the full dataset
+    if (message && filteredProperties.length === 0) {
+      const { scored } = semanticRankProperties(allProperties, message, searchFilters);
+      const semanticMatches = scored
+        .filter(item => item.score >= 0.18) // light threshold to avoid random noise
+        .slice(0, 15) // cap to keep responses concise
+        .map(item => item.property);
+      
+      if (semanticMatches.length > 0) {
+        filteredProperties = semanticMatches;
+        usedSemanticFallback = true;
+        console.log('✅ Semantic fallback results used');
+      }
+    }
+
+    // If we used semantic fallback and predictions were requested, enrich the new set
+    if (predict === true && usedSemanticFallback && filteredProperties.length > 0) {
+      filteredProperties = await enhancePropertiesWithPredictions(filteredProperties);
+    }
+
+    let propertyStats = computePropertyStats(filteredProperties, searchFilters);
     
     // If no properties found, try intelligent recommendations
     if (filteredProperties.length === 0 && openai && message) {
@@ -920,7 +1062,10 @@ Response format: Start with acknowledging the search, then explain the JSON data
     let responseMessage = null;
     if (filteredProperties.length > 0 && message) {
       // Try ML first for automated response
-      const mlAnalysis = await analyzeMessageWithML(message, conversationHistory || []);
+      if (!mlAnalysis) {
+        mlAnalysis = await analyzeMessageWithML(message, conversationHistory || []);
+      }
+
       if (mlAnalysis && mlAnalysis.intent === 'search_property' && mlAnalysis.automated_response) {
         responseMessage = mlAnalysis.automated_response;
         // Enhance with property count
@@ -961,8 +1106,29 @@ Be concise and enthusiastic.`;
       
       // Final fallback: simple message
       if (!responseMessage) {
-        responseMessage = `I found ${filteredProperties.length} propert${filteredProperties.length === 1 ? 'y' : 'ies'} matching your criteria!`;
+        const semanticNote = usedSemanticFallback ? ' based on a semantic match to your request' : '';
+        responseMessage = `I found ${filteredProperties.length} propert${filteredProperties.length === 1 ? 'y' : 'ies'}${semanticNote}!`;
       }
+
+      // If the user asked about prices, append quick stats from the filtered set
+      if (propertyStats) {
+        const priceIntent = (mlAnalysis && ['price_query', 'budget_planning', 'search_property'].includes(mlAnalysis.intent))
+          || /price|cost|budget|average|how much/i.test(message);
+
+        if (priceIntent) {
+          const locationText = propertyStats.location ? ` in ${propertyStats.location}` : '';
+          const statsMessage = `Based on ${propertyStats.count} properties${locationText}, the average price is ${formatCurrency(propertyStats.average)} (median ${formatCurrency(propertyStats.median)}) with a range of ${formatCurrency(propertyStats.min)} - ${formatCurrency(propertyStats.max)}.`;
+          responseMessage = responseMessage
+            ? `${responseMessage} ${statsMessage}`
+            : statsMessage;
+        }
+      }
+    }
+
+    // Provide at least one helpful sentence when stats exist but no message was built (e.g., programmatic call)
+    if (!responseMessage && propertyStats && filteredProperties.length > 0) {
+      const locationText = propertyStats.location ? ` in ${propertyStats.location}` : '';
+      responseMessage = `I found ${filteredProperties.length} properties${locationText}. The average price is ${formatCurrency(propertyStats.average)} with a range of ${formatCurrency(propertyStats.min)} - ${formatCurrency(propertyStats.max)}.`;
     }
     
     res.json({
@@ -971,7 +1137,8 @@ Be concise and enthusiastic.`;
       message: responseMessage,
       data: filteredProperties,
       count: filteredProperties.length,
-      filters: searchFilters
+      filters: searchFilters,
+      stats: propertyStats
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

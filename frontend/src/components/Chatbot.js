@@ -1111,8 +1111,23 @@ const Chatbot = ({ onPropertiesFound, onPropertySave, onAddToComparison, sidebar
               />
 
               <div className="flex items-center justify-between pb-2">
-                <div className="flex items-center gap-2 text-white/70 text-xs" />
+                <div className="flex items-center gap-2 text-white/70 text-xs"></div>
                 <div className="flex items-center gap-2">
+                  <motion.button
+                    onClick={() => {
+                      setResultsExpanded((prev) => {
+                        const next = !prev;
+                        setResultsPanelHeight(next ? getMaxResultsHeight() : 320);
+                        return next;
+                      });
+                    }}
+                    className="p-2 rounded-lg bg-white/10 hover:bg-white/15 text-white/80 hover:text-white border border-white/10"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    aria-label={resultsExpanded ? 'Collapse results' : 'Expand results'}
+                  >
+                    {resultsExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                  </motion.button>
                   <motion.button
                     onClick={() => {
                       setSearchResults([]);
