@@ -486,6 +486,8 @@ const Chatbot = ({ onPropertiesFound, onPropertySave, onAddToComparison, sidebar
   const [notifications, setNotifications] = useState(true);
   const [savedMessages, setSavedMessages] = useState([]);
   const [messageReactions, setMessageReactions] = useState({});
+  const [showResultsPanel, setShowResultsPanel] = useState(true);
+  const [resultsExpanded, setResultsExpanded] = useState(false);
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -575,6 +577,8 @@ const Chatbot = ({ onPropertiesFound, onPropertySave, onAddToComparison, sidebar
       if (hasResults) {
         setSearchResults(data);
         onPropertiesFound(data);
+        setShowResultsPanel(true);
+        setResultsExpanded(false);
 
         const botMessage = chatMessage
           ? chatMessage
@@ -604,6 +608,7 @@ const Chatbot = ({ onPropertiesFound, onPropertySave, onAddToComparison, sidebar
 
       // Handle conversational-only responses or empty results
       setSearchResults([]);
+      setShowResultsPanel(false);
       if (isConversation && chatMessage) {
         setMessages((prev) => [
           ...prev,
@@ -1032,40 +1037,71 @@ const Chatbot = ({ onPropertiesFound, onPropertySave, onAddToComparison, sidebar
 
         {/* Search Results */}
         <AnimatePresence>
-          {searchResults.length > 0 && (
+          {searchResults.length > 0 && showResultsPanel && (
             <motion.div
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 50 }}
               transition={{ duration: 0.5 }}
-              className="px-6 py-4 backdrop-blur-xl bg-slate-800/50 border-t border-white/10 rounded-3xl max-h-[45vh] min-h-[220px] resize-y overflow-auto scrollbar-thin scrollbar-thumb-purple-500/30 scrollbar-track-transparent shadow-2xl"
+              className="px-6 py-4 backdrop-blur-xl bg-slate-800/50 border-t border-white/10 rounded-3xl overflow-hidden shadow-2xl"
+              style={{
+                height: resultsExpanded ? '60vh' : '280px',
+              }}
             >
-              <div className="w-full flex justify-center pb-2">
-                <div className="h-1 w-16 rounded-full bg-white/20" aria-hidden="true" />
-              </div>
-              <motion.h3
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-lg font-bold text-white mb-3 flex items-center gap-2"
-              >
-                <Sparkles size={20} className="text-yellow-300" />
-                Search Results ({searchResults.length})
-              </motion.h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {searchResults.map((property, index) => (
-                  <motion.div
-                    key={property.id}
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
+              <div className="flex items-center justify-between pb-2">
+                <div className="flex items-center gap-2 text-white/70 text-xs">
+                  <div className="h-1 w-16 rounded-full bg-white/20" aria-hidden="true" />
+                  <span className="hidden sm:inline">Drag handle</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <motion.button
+                    onClick={() => setResultsExpanded((prev) => !prev)}
+                    className="p-2 rounded-lg bg-white/10 hover:bg-white/15 text-white/80 hover:text-white border border-white/10"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    aria-label={resultsExpanded ? 'Collapse results' : 'Expand results'}
                   >
-                    <PropertyCard
-                      property={property}
-                      onSave={onPropertySave}
-                      onAddToComparison={onAddToComparison}
-                    />
-                  </motion.div>
-                ))}
+                    {resultsExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                  </motion.button>
+                  <motion.button
+                    onClick={() => {
+                      setSearchResults([]);
+                      setShowResultsPanel(false);
+                    }}
+                    className="p-2 rounded-lg bg-white/10 hover:bg-white/15 text-white/80 hover:text-white border border-white/10"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    aria-label="Close search results"
+                  >
+                    <X size={16} />
+                  </motion.button>
+                </div>
+              </div>
+              <div className="overflow-auto h-full scrollbar-thin scrollbar-thumb-purple-500/30 scrollbar-track-transparent">
+                <motion.h3
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-lg font-bold text-white mb-3 flex items-center gap-2"
+                >
+                  <Sparkles size={20} className="text-yellow-300" />
+                  Search Results ({searchResults.length})
+                </motion.h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-2">
+                  {searchResults.map((property, index) => (
+                    <motion.div
+                      key={property.id}
+                      initial={{ opacity: 0, y: 30 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                    >
+                      <PropertyCard
+                        property={property}
+                        onSave={onPropertySave}
+                        onAddToComparison={onAddToComparison}
+                      />
+                    </motion.div>
+                  ))}
+                </div>
               </div>
             </motion.div>
           )}
