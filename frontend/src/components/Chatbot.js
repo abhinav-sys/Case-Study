@@ -488,6 +488,10 @@ const Chatbot = ({ onPropertiesFound, onPropertySave, onAddToComparison, sidebar
   const [messageReactions, setMessageReactions] = useState({});
   const [showResultsPanel, setShowResultsPanel] = useState(true);
   const [resultsExpanded, setResultsExpanded] = useState(false);
+  const [resultsPanelHeight, setResultsPanelHeight] = useState(320);
+  const [isResizingResults, setIsResizingResults] = useState(false);
+  const resizeStartY = useRef(0);
+  const resizeStartHeight = useRef(320);
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -507,6 +511,35 @@ const Chatbot = ({ onPropertiesFound, onPropertySave, onAddToComparison, sidebar
   useEffect(() => {
     scrollToBottom();
   }, [messages, searchResults, scrollToBottom]);
+
+  // Drag-to-resize for results panel
+  useEffect(() => {
+    if (!isResizingResults) return;
+
+    const handleMove = (e) => {
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const delta = clientY - resizeStartY.current;
+      const minHeight = 220;
+      const maxHeight = Math.max(minHeight, window.innerHeight * 0.7);
+      const next = Math.min(Math.max(resizeStartHeight.current - delta, minHeight), maxHeight);
+      setResultsPanelHeight(next);
+      setResultsExpanded(next > window.innerHeight * 0.45);
+    };
+
+    const handleUp = () => setIsResizingResults(false);
+
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+    window.addEventListener('touchmove', handleMove);
+    window.addEventListener('touchend', handleUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+      window.removeEventListener('touchmove', handleMove);
+      window.removeEventListener('touchend', handleUp);
+    };
+  }, [isResizingResults]);
 
   // Voice transcript effect
   useEffect(() => {
@@ -579,6 +612,7 @@ const Chatbot = ({ onPropertiesFound, onPropertySave, onAddToComparison, sidebar
         onPropertiesFound(data);
         setShowResultsPanel(true);
         setResultsExpanded(false);
+        setResultsPanelHeight(320);
 
         const botMessage = chatMessage
           ? chatMessage
@@ -1045,23 +1079,59 @@ const Chatbot = ({ onPropertiesFound, onPropertySave, onAddToComparison, sidebar
               transition={{ duration: 0.5 }}
               className="px-6 py-4 backdrop-blur-xl bg-slate-800/50 border-t border-white/10 rounded-3xl overflow-hidden shadow-2xl"
               style={{
-                height: resultsExpanded ? '60vh' : '280px',
+                height: `${resultsPanelHeight}px`,
               }}
             >
               <div className="flex items-center justify-between pb-2">
-                <div className="flex items-center gap-2 text-white/70 text-xs">
-                  <div className="h-1 w-16 rounded-full bg-white/20" aria-hidden="true" />
-                  <span className="hidden sm:inline">Drag handle</span>
+                <div className="flex items-center gap-3 text-white/70 text-xs">
+                  <div
+                    className="h-1.5 w-16 rounded-full bg-white/25 cursor-row-resize"
+                    role="slider"
+                    aria-valuemin={220}
+                    aria-valuemax={Math.max(220, Math.floor(window.innerHeight * 0.7))}
+                    aria-valuenow={Math.floor(resultsPanelHeight)}
+                    aria-label="Resize search results"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      resizeStartY.current = e.clientY;
+                      resizeStartHeight.current = resultsPanelHeight;
+                      setIsResizingResults(true);
+                    }}
+                    onTouchStart={(e) => {
+                      const touch = e.touches?.[0];
+                      if (!touch) return;
+                      resizeStartY.current = touch.clientY;
+                      resizeStartHeight.current = resultsPanelHeight;
+                      setIsResizingResults(true);
+                    }}
+                  />
+                  <span className="hidden sm:inline">Drag to resize</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <motion.button
-                    onClick={() => setResultsExpanded((prev) => !prev)}
+                    onClick={() => {
+                      const expandedHeight = Math.min(window.innerHeight * 0.6, window.innerHeight * 0.7);
+                      setResultsPanelHeight(expandedHeight);
+                      setResultsExpanded(true);
+                    }}
                     className="p-2 rounded-lg bg-white/10 hover:bg-white/15 text-white/80 hover:text-white border border-white/10"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    aria-label={resultsExpanded ? 'Collapse results' : 'Expand results'}
+                    aria-label="Expand results"
                   >
-                    {resultsExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                    <Maximize2 size={16} />
+                  </motion.button>
+                  <motion.button
+                    onClick={() => {
+                      setResultsPanelHeight(280);
+                      setResultsExpanded(false);
+                    }}
+                    className="p-2 rounded-lg bg-white/10 hover:bg-white/15 text-white/80 hover:text-white border border-white/10"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    aria-label="Collapse results"
+                  >
+                    <Minimize2 size={16} />
                   </motion.button>
                   <motion.button
                     onClick={() => {
