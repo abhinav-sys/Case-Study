@@ -569,32 +569,17 @@ const Chatbot = ({ onPropertiesFound, onPropertySave, onAddToComparison, sidebar
       });
 
       const { data, count, filters, isConversation, message: chatMessage } = response.data;
+      const hasResults = Array.isArray(data) && data.length > 0;
 
-      // Handle ChatGPT conversational response
-      if (isConversation && chatMessage) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: messageIdCounter.current++,
-            type: 'bot',
-            text: chatMessage,
-            timestamp: new Date(),
-            reactions: [],
-          },
-        ]);
-        return;
-      }
-
-      // Handle property search results
-      if (data && data.length > 0) {
+      // Always show results when they exist, even if a conversational message is returned
+      if (hasResults) {
         setSearchResults(data);
         onPropertiesFound(data);
-        
-        // Use ChatGPT message if available, otherwise use default
-        const botMessage = chatMessage && isConversation 
-          ? chatMessage 
+
+        const botMessage = chatMessage
+          ? chatMessage
           : `I found ${count} propert${count === 1 ? 'y' : 'ies'} matching your criteria! Here are the results:`;
-        
+
         setMessages((prev) => [
           ...prev,
           {
@@ -607,41 +592,40 @@ const Chatbot = ({ onPropertiesFound, onPropertySave, onAddToComparison, sidebar
             isRecommendation: response.data.isRecommendation || false,
           },
         ]);
-        if (notifications) {
-          // Show notification
-          if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('Properties Found!', {
-              body: `Found ${count} properties matching your search`,
-              icon: '/favicon.ico',
-            });
-          }
+
+        if (notifications && 'Notification' in window && Notification.permission === 'granted') {
+          new Notification('Properties Found!', {
+            body: `Found ${count} properties matching your search`,
+            icon: '/favicon.ico',
+          });
         }
+        return;
+      }
+
+      // Handle conversational-only responses or empty results
+      setSearchResults([]);
+      if (isConversation && chatMessage) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: messageIdCounter.current++,
+            type: 'bot',
+            text: chatMessage,
+            timestamp: new Date(),
+            reactions: [],
+          },
+        ]);
       } else {
-        setSearchResults([]);
-        // If ChatGPT provided a helpful message, use it; otherwise use default
-        if (isConversation && chatMessage) {
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: messageIdCounter.current++,
-              type: 'bot',
-              text: chatMessage,
-              timestamp: new Date(),
-              reactions: [],
-            },
-          ]);
-        } else {
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: messageIdCounter.current++,
-              type: 'bot',
-              text: "I couldn't find any properties matching your criteria. Try adjusting your search parameters, such as:\n• Location (e.g., New York, Miami, Los Angeles)\n• Budget (e.g., under $500,000)\n• Number of bedrooms or bathrooms\n• Amenities (e.g., pool, gym, parking)",
-              timestamp: new Date(),
-              reactions: [],
-            },
-          ]);
-        }
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: messageIdCounter.current++,
+            type: 'bot',
+            text: "I couldn't find any properties matching your criteria. Try adjusting your search parameters, such as:\n• Location (e.g., New York, Miami, Los Angeles)\n• Budget (e.g., under $500,000)\n• Number of bedrooms or bathrooms\n• Amenities (e.g., pool, gym, parking)",
+            timestamp: new Date(),
+            reactions: [],
+          },
+        ]);
       }
     } catch (error) {
       console.error('Search error:', error);
@@ -773,9 +757,9 @@ const Chatbot = ({ onPropertiesFound, onPropertySave, onAddToComparison, sidebar
   const messageGroups = groupMessages(messages);
 
   return (
-    <div className="h-full w-full flex flex-col bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden">
+    <div className="h-full w-full flex flex-col bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden min-h-0">
       {/* Main Chat Area - Full Width */}
-      <div className="flex-1 flex flex-col min-w-0 h-full">
+      <div className="flex-1 flex flex-col min-w-0 h-full min-h-0">
         {/* Chat Header */}
         <GlassCard intensity="medium" hover={false} className="m-4 mb-0 p-4 mx-4">
           <div className="flex items-center justify-between">
@@ -817,7 +801,7 @@ const Chatbot = ({ onPropertiesFound, onPropertySave, onAddToComparison, sidebar
         {/* Messages Area */}
         <div 
           ref={chatContainerRef}
-          className="flex-1 overflow-y-auto px-6 py-8 space-y-6 scrollbar-thin scrollbar-thumb-purple-500/30 scrollbar-track-transparent"
+          className="flex-1 overflow-y-auto px-6 py-8 space-y-6 scrollbar-thin scrollbar-thumb-purple-500/30 scrollbar-track-transparent min-h-0"
           role="log"
           aria-live="polite"
           aria-label="Chat messages"
@@ -1054,8 +1038,11 @@ const Chatbot = ({ onPropertiesFound, onPropertySave, onAddToComparison, sidebar
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 50 }}
               transition={{ duration: 0.5 }}
-              className="px-6 py-4 backdrop-blur-xl bg-slate-800/50 border-t border-white/10 max-h-[300px] overflow-y-auto"
+              className="px-6 py-4 backdrop-blur-xl bg-slate-800/50 border-t border-white/10 rounded-3xl max-h-[45vh] min-h-[220px] resize-y overflow-auto scrollbar-thin scrollbar-thumb-purple-500/30 scrollbar-track-transparent shadow-2xl"
             >
+              <div className="w-full flex justify-center pb-2">
+                <div className="h-1 w-16 rounded-full bg-white/20" aria-hidden="true" />
+              </div>
               <motion.h3
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}

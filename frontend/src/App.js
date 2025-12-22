@@ -153,7 +153,7 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <div className={`fixed inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden ${isMobile ? '' : 'flex'}`}>
+      <div className={`fixed inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden ${isMobile ? '' : 'flex'} min-h-0`}>
         {/* Mobile Overlay */}
         {isMobile && sidebarOpen && (
           <motion.div 
@@ -173,7 +173,7 @@ function App() {
             width: isMobile ? '280px' : (sidebarOpen ? '300px' : '0px')
           }}
           transition={{ duration: 0.3, type: 'spring' }}
-          className={`bg-slate-800/95 backdrop-blur-2xl border-r-2 border-purple-500/30 flex flex-col shadow-2xl z-40 ${
+          className={`bg-slate-800/95 backdrop-blur-2xl border-r-2 border-purple-500/30 flex flex-col shadow-2xl z-40 overflow-y-auto min-h-0 ${
             isMobile ? 'fixed inset-y-0 left-0' : 'flex-shrink-0'
           }`}
           style={{
@@ -283,7 +283,7 @@ function App() {
         )}
 
         {/* Main Content Area */}
-        <div className={`flex flex-col min-w-0 overflow-hidden ${isMobile ? 'w-full h-full' : 'flex-1'}`}>
+        <div className={`flex flex-col min-w-0 overflow-hidden min-h-0 ${isMobile ? 'w-full h-full' : 'flex-1'}`}>
           {/* Top Bar (only for non-chatbot tabs) */}
           {activeTab !== 'chatbot' && (
             <motion.div
@@ -313,7 +313,7 @@ function App() {
           )}
 
           {/* Content */}
-          <div className={`flex-1 overflow-hidden ${activeTab === 'chatbot' ? '' : 'overflow-y-auto'}`}>
+          <div className={`flex-1 overflow-hidden min-h-0 ${activeTab === 'chatbot' ? '' : 'overflow-y-auto'}`}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
@@ -321,7 +321,7 @@ function App() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3 }}
-                className={`h-full w-full ${activeTab === 'chatbot' ? '' : 'p-3 sm:p-4 md:p-6 lg:p-8'}`}
+                className={`h-full w-full min-h-0 ${activeTab === 'chatbot' ? '' : 'p-3 sm:p-4 md:p-6 lg:p-8'}`}
               >
                 {activeTab === 'chatbot' && (
                   <Chatbot
